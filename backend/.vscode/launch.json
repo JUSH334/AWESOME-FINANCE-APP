@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "AwesomeApplication",
+            "request": "launch",
+            "mainClass": "com.awesomeapp.AwesomeApplication",
+            "projectName": "demo"
+        },
+        {
+            "type": "java",
+            "name": "DemoApplication",
+            "request": "launch",
+            "mainClass": "com.example.demo.DemoApplication",
+            "projectName": "demo"
+        },
+        {
+            "type": "java",
+            "name": "AwesomeApplication",
+            "request": "launch",
+            "mainClass": "com.AwesomeApplication",
+            "projectName": "demo"
+        }
+    ]
+}
