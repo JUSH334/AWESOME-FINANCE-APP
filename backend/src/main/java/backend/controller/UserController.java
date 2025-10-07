@@ -26,7 +26,7 @@ public class UserController {
     
     // GET user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable Integer id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
@@ -35,15 +35,6 @@ public class UserController {
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam String name) {
         List<User> users = userService.searchUsersByName(name);
-        return ResponseEntity.ok(users);
-    }
-    
-    // GET users in age range
-    @GetMapping("/age-range")
-    public ResponseEntity<List<User>> getUsersInAgeRange(
-            @RequestParam int minAge, 
-            @RequestParam int maxAge) {
-        List<User> users = userService.getUsersInAgeRange(minAge, maxAge);
         return ResponseEntity.ok(users);
     }
     
@@ -57,7 +48,7 @@ public class UserController {
     // PUT update user
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(
-            @PathVariable Long id, 
+            @PathVariable Integer id, 
             @RequestBody User user) {
         User updatedUser = userService.updateUser(id, user);
         return ResponseEntity.ok(updatedUser);
@@ -65,7 +56,7 @@ public class UserController {
     
     // DELETE user
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

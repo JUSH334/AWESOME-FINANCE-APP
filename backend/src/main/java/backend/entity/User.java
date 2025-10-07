@@ -24,11 +24,10 @@ public class User {
     
     @Column(nullable = false, unique = true, length = 100)
     private String email;
-    
-    private Integer age;
-    
-    @Column(name = "created_at")
+
+    // ADD THIS FIELD - This was missing!
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Date createdAt;
     
     // Default Constructor
@@ -37,10 +36,9 @@ public class User {
     }
     
     // Constructor with fields
-    public User(String name, String email, Integer age) {
+    public User(String name, String email) {
         this.name = name;
         this.email = email;
-        this.age = age;
         this.createdAt = new Date();
     }
     
@@ -67,14 +65,6 @@ public class User {
     
     public void setEmail(String email) {
         this.email = email;
-    }
-    
-    public Integer getAge() {
-        return age;
-    }
-    
-    public void setAge(Integer age) {
-        this.age = age;
     }
     
     public Date getCreatedAt() {

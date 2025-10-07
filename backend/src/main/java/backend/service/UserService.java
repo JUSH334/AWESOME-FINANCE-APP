@@ -23,7 +23,7 @@ public class UserService {
     }
     
     // Get user by ID
-    public User getUserById(Long id) {
+    public User getUserById(Integer id) {
         return userRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
@@ -38,11 +38,6 @@ public class UserService {
         return userRepository.findByNameContainingIgnoreCase(name);
     }
     
-    // Get users in age range
-    public List<User> getUsersInAgeRange(int minAge, int maxAge) {
-        return userRepository.findUsersInAgeRange(minAge, maxAge);
-    }
-    
     // Create new user
     public User createUser(User user) {
         // Check if email already exists
@@ -54,24 +49,23 @@ public class UserService {
     }
     
     // Update user
-    public User updateUser(Long id, User userDetails) {
+    public User updateUser(Integer id, User userDetails) {
         User user = getUserById(id);
         
         user.setName(userDetails.getName());
         user.setEmail(userDetails.getEmail());
-        user.setAge(userDetails.getAge());
         
         return userRepository.save(user);
     }
     
     // Delete user
-    public void deleteUser(Long id) {
+    public void deleteUser(Integer id) {
         User user = getUserById(id);
         userRepository.delete(user);
     }
     
     // Check if user exists
-    public boolean existsById(Long id) {
+    public boolean existsById(Integer id) {
         return userRepository.existsById(id);
     }
 }
