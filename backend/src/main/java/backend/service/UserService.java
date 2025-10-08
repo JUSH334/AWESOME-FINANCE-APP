@@ -4,74 +4,46 @@ import backend.entity.User;
 import backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class UserService {
-    
+
+    private final UserRepository userRepository;
+
     @Autowired
-    private UserRepository userRepository;
-    
-    // Get all users
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
-    
-    // Get user by ID
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
-    
-    // Get user by email
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-    
-    // Search users by name
-    public List<User> searchUsersByName(String name) {
-        return userRepository.findByNameContainingIgnoreCase(name);
-    }
-    
-    // Get users in age range
-    public List<User> getUsersInAgeRange(int minAge, int maxAge) {
-        return userRepository.findUsersInAgeRange(minAge, maxAge);
-    }
-    
-    // Create new user
+
     public User createUser(User user) {
-        // Check if email already exists
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + user.getEmail() + " already exists");
-        }
-        user.setCreatedAt(new Date());
         return userRepository.save(user);
     }
-    
-    // Update user
-    public User updateUser(Long id, User userDetails) {
-        User user = getUserById(id);
-        
-        user.setName(userDetails.getName());
-        user.setEmail(userDetails.getEmail());
-        user.setAge(userDetails.getAge());
-        
-        return userRepository.save(user);
+
+    public User updateUser(Long id, User updatedUser) {
+        return userRepository.findById(id).map(user -> {
+            user.setUsername(updatedUser.getUsername());
+            user.setEmail(updatedUser.getEmail());
+            user.setFirstName(updatedUser.getFirstName());
+            user.setLastName(updatedUser.getLastName());
+            user.setIsActive(updatedUser.getIsActive());
+            user.setIsEmailVerified(updatedUser.getIsEmailVerified());
+            user.setUpdatedAt(updatedUser.getUpdatedAt());
+            return userRepository.save(user);
+        }).orElseThrow(() -> new RuntimeException("User not found"));
     }
-    
-    // Delete user
+
     public void deleteUser(Long id) {
-        User user = getUserById(id);
-        userRepository.delete(user);
-    }
-    
-    // Check if user exists
-    public boolean existsById(Long id) {
-        return userRepository.existsById(id);
+        userRepository.deleteById(id);
     }
 }
