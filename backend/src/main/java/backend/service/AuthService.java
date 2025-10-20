@@ -80,7 +80,7 @@ public class AuthService {
         // Find user by username
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("Invalid username or password");
+            throw new IllegalArgumentException("Invalid username");
         }
 
         User user = userOpt.get();
@@ -92,7 +92,7 @@ public class AuthService {
 
         // Verify password using BCrypt
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid username or password");
+            throw new IllegalArgumentException("Invalid password");
         }
 
         // Update last login time
