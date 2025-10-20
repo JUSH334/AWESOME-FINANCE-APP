@@ -9,21 +9,24 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Autowired
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.emailService = emailService;
     }
 
     /**
-     * Register a new user with secure password hashing
+     * Register a new user with secure password hashing and email verification
      */
     public AuthResponse register(String username, String password, String email) {
         // Validation
@@ -36,6 +39,9 @@ public class AuthService {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException("Email is required");
         }
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
 
         // Check if user already exists
         if (userRepository.existsByUsername(username)) {
@@ -45,6 +51,9 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
+        // Generate verification token
+        String verificationToken = UUID.randomUUID().toString();
+
         // Create new user
         User user = new User();
         user.setUsername(username);
@@ -52,35 +61,43 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setIsActive(true);
         user.setIsEmailVerified(false);
+        user.setVerificationToken(verificationToken);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
 
+        // Send verification email
+        emailService.sendVerificationEmail(email, username, verificationToken);
+
         return new AuthResponse(
             savedUser.getId().toString(),
             savedUser.getUsername(),
             true,
-            "Registration successful"
+            "Registration successful. Please check your email to verify your account."
         );
     }
 
     /**
-     * Login user with credential validation
+     * Login user with credential validation (accepts username or email)
      */
-    public AuthResponse login(String username, String password) {
+    public AuthResponse login(String usernameOrEmail, String password) {
         // Validation
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username is required");
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username or email is required");
         }
         if (password == null || password.isEmpty()) {
             throw new IllegalArgumentException("Password is required");
         }
 
-        // Find user by username
-        Optional<User> userOpt = userRepository.findByUsername(username);
+        // Find user by username or email
+        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("Invalid username");
+            userOpt = userRepository.findByEmail(usernameOrEmail);
+        }
+        
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("Invalid credentials");
         }
 
         User user = userOpt.get();
@@ -92,7 +109,12 @@ public class AuthService {
 
         // Verify password using BCrypt
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid password");
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        // Check if email is verified
+        if (!user.getIsEmailVerified()) {
+            throw new IllegalArgumentException("Please verify your email before logging in. Check your inbox for the verification link.");
         }
 
         // Update last login time
@@ -108,19 +130,95 @@ public class AuthService {
     }
 
     /**
-     * Reset password (sends reset link - placeholder implementation)
+     * Verify email with token
      */
-    public void resetPassword(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username is required");
+    public AuthResponse verifyEmail(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Verification token is required");
         }
 
-        Optional<User> userOpt = userRepository.findByUsername(username);
+        Optional<User> userOpt = userRepository.findByVerificationToken(token);
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("User not found with this username");
+            throw new IllegalArgumentException("Invalid or expired verification token");
         }
 
-        // TODO: In production, generate a reset token and send via email service
-        // For now, just validate the user exists
+        User user = userOpt.get();
+        
+        if (user.getIsEmailVerified()) {
+            throw new IllegalArgumentException("Email is already verified");
+        }
+
+        user.setIsEmailVerified(true);
+        user.setVerificationToken(null); // Clear the token
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return new AuthResponse(
+            user.getId().toString(),
+            user.getUsername(),
+            true,
+            "Email verified successfully. You can now log in."
+        );
+    }
+
+    /**
+     * Reset password (sends reset link)
+     */
+    public void resetPassword(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username or email is required");
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(usernameOrEmail);
+        }
+        
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        User user = userOpt.get();
+        
+        // Generate reset token
+        String resetToken = UUID.randomUUID().toString();
+        user.setPasswordResetToken(resetToken);
+        user.setPasswordResetExpiry(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+
+        // Send reset email
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getUsername(), resetToken);
+    }
+
+    /**
+     * Resend verification email
+     */
+    public void resendVerificationEmail(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username or email is required");
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(usernameOrEmail);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(usernameOrEmail);
+        }
+        
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        User user = userOpt.get();
+        
+        if (user.getIsEmailVerified()) {
+            throw new IllegalArgumentException("Email is already verified");
+        }
+
+        // Generate new verification token if needed
+        if (user.getVerificationToken() == null) {
+            user.setVerificationToken(UUID.randomUUID().toString());
+            userRepository.save(user);
+        }
+
+        emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), user.getVerificationToken());
     }
 }

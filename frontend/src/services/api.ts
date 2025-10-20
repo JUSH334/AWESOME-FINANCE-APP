@@ -25,11 +25,11 @@ const handleAuthResponse = async (response: Response): Promise<AuthApiResponse> 
 };
 
 export const api = {
-  async login(username: string, password: string): Promise<User> {
+  async login(usernameOrEmail: string, password: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: usernameOrEmail, password }),
     });
     
     const data = await handleAuthResponse(response);
@@ -57,16 +57,41 @@ export const api = {
     };
   },
 
-  async resetPassword(username: string): Promise<true> {
-    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+  async verifyEmail(token: string): Promise<true> {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(token)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    await handleAuthResponse(response);
+    return true;
+  },
+
+  async resendVerification(usernameOrEmail: string): Promise<true> {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username: usernameOrEmail }),
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Password reset failed");
+      const error = await response.text();
+      throw new Error(error || "Failed to resend verification");
+    }
+    
+    return true;
+  },
+
+  async resetPassword(usernameOrEmail: string): Promise<true> {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameOrEmail }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || "Password reset failed");
     }
     
     return true;

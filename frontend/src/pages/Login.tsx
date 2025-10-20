@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const schema = z.object({ 
-  username: z.string().min(1, "Username is required"),
+  username: z.string().min(1, "Username or email is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   remember: z.boolean().optional() 
 });
@@ -39,11 +39,23 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold mb-1">Sign in</h1>
         <p className="text-sm text-slate-500 mb-6">Welcome back to MyFin</p>
         
-        {apiError && <p className="text-rose-600 text-sm mb-4 bg-rose-50 p-3 rounded-lg">{apiError}</p>}
+        {apiError && (
+          <div className="text-rose-600 text-sm mb-4 bg-rose-50 p-3 rounded-lg">
+            {apiError}
+            {apiError.includes("verify your email") && (
+              <div className="mt-2">
+                <Link to="/resend-verification" className="text-rose-700 underline">
+                  Resend verification email
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
         
-        <label className="block text-sm font-medium">Username</label>
+        <label className="block text-sm font-medium">Username or Email</label>
         <input 
           className="mt-1 w-full rounded-xl border p-2" 
+          placeholder="Enter your username or email"
           {...register("username")} 
         />
         {errors.username && <p className="text-rose-600 text-sm mt-1">{errors.username.message}</p>}

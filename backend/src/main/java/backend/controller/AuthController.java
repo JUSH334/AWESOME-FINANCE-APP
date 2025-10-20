@@ -35,12 +35,36 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         try {
-            AuthResponse response = authService.login(request.getUsername(), request.getPassword());
+            // The usernameOrEmail field will accept either username or email
+            String usernameOrEmail = request.getUsername();
+            AuthResponse response = authService.login(usernameOrEmail, request.getPassword());
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new AuthResponse(null, null, false, e.getMessage())
             );
+        }
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<AuthResponse> verifyEmail(@RequestParam String token) {
+        try {
+            AuthResponse response = authService.verifyEmail(token);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new AuthResponse(null, null, false, e.getMessage())
+            );
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestBody AuthRequest request) {
+        try {
+            authService.resendVerificationEmail(request.getUsername());
+            return ResponseEntity.ok("Verification email resent successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
