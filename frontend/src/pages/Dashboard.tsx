@@ -24,7 +24,11 @@ export default function DashboardPage() {
             <div className="text-sm text-slate-500">{Math.round(summary.goalProgress * 100)}% completed</div>
           </div>
           <div className="h-2 mt-3 w-full rounded-full bg-slate-200 overflow-hidden">
-            <div className="h-full bg-green-500" style={{ width: `${summary.goalProgress * 100}%` }} />
+            <div className="h-full"
+    style={{
+      width: `${summary.goalProgress * 100}%`,
+      background: "linear-gradient(90deg, #00C289 0%, #009E67 100%)",
+    }} />
           </div>
         </Card>
       </div>

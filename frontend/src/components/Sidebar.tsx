@@ -1,30 +1,96 @@
-﻿import { NavLink } from "react-router-dom";
-import { LayoutDashboard, CreditCard, Wallet, TrendingDown, Calculator, Settings, User } from "lucide-react";
-import type { JSX } from "react";
+﻿import { NavLink, Link } from "react-router-dom";
+import { LayoutDashboard, Wallet, PiggyBank, User, Settings } from "lucide-react";
+
 export default function Sidebar() {
-  const link = (to: string, label: string, icon: JSX.Element) => (
-    <NavLink to={to} className={({ isActive }) =>
-      `w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
-        isActive ? "bg-green-600 text-white" : "text-slate-600 hover:bg-slate-100"}` }>
-      {icon}<span>{label}</span>
-    </NavLink>
-  );
   return (
-    <aside className="rounded-2xl bg-white border border-slate-200 p-4 flex flex-col h-full">
-      <div className="mb-6">
-        <div className="text-2xl font-bold leading-none">MyFin</div>
-        <div className="text-xs text-slate-500">Financial Dashboard</div>
-      </div>
-      <nav className="space-y-1">
-        {link("/dashboard", "Dashboard", <LayoutDashboard size={18} />)}
-        {link("/accounts", "Accounts", <CreditCard size={18} />)}
-        {link("/budgets", "Budgets", <Wallet size={18} />)}
-        {link("/transactions", "Transactions", <TrendingDown size={18} />)}
-        {link("/calculator", "Calculator", <Calculator size={18} />)}
-        {link("/profile", "Profile", <User size={18} />)}
-        {link("/settings", "Settings", <Settings size={18} />)}
+    <aside className="bg-white rounded-2xl shadow-sm p-4 space-y-6">
+      {/* Brand: same SVG as login page */}
+      <Link to="/dashboard" className="flex items-center gap-3">
+        <div className="h-10 w-10 md:h-12 md:w-12 shrink-0">
+          <svg viewBox="0 0 64 64" aria-hidden="true" className="h-full w-full text-emerald-700">
+            <defs>
+              <linearGradient id="mf-globe-grad" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#10B981" />
+                <stop offset="100%" stopColor="#059669" />
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="url(#mf-globe-grad)" fillOpacity="0.15" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M4 32 A 28 12 0 0 1 60 32" stroke="currentColor" strokeOpacity="0.75" strokeWidth="2" fill="none" />
+            <path d="M4 32 A 28 20 0 0 1 60 32" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
+            <path d="M32 4 A 28 28 0 0 1 32 60" stroke="currentColor" strokeOpacity="0.75" strokeWidth="2" fill="none" />
+            <path d="M32 4 A 28 28 0 0 0 32 60" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 leading-tight">MyFin</h2>
+          <p className="text-slate-500 text-sm leading-tight">Financial Dashboard</p>
+        </div>
+      </Link>
+
+      {/* Nav */}
+      <nav className="space-y-2">
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          Dashboard
+        </NavLink>
+
+        <NavLink
+          to="/accounts"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <Wallet className="w-4 h-4" />
+          Accounts
+        </NavLink>
+
+        <NavLink
+          to="/budgets"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <PiggyBank className="w-4 h-4" />
+          Budgets
+        </NavLink>
+
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <User className="w-4 h-4" />
+          Profile
+        </NavLink>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <Settings className="w-4 h-4" />
+          Settings
+        </NavLink>
       </nav>
-      <div className="mt-auto pt-6 text-xs text-slate-500">v1.0 • Demo</div>
+
+      <p className="text-xs text-slate-400 mt-4">v1.0 • Demo</p>
     </aside>
   );
 }
