@@ -7,6 +7,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyEmailPage from "./pages/VerifyEmail";
+
 import DashboardPage from "./pages/Dashboard";
 import AccountsPage from "./pages/Accounts";
 import BudgetsPage from "./pages/Budgets";

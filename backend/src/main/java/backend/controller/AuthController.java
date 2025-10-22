@@ -2,6 +2,7 @@ package backend.controller;
 
 import backend.dto.AuthRequest;
 import backend.dto.AuthResponse;
+import backend.dto.PasswordResetRequest;
 import backend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,11 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody AuthRequest request) {
         try {
-            AuthResponse response = authService.register(request.getUsername(), request.getPassword(), request.getEmail());
+            AuthResponse response = authService.register(
+                request.getUsername(), 
+                request.getPassword(), 
+                request.getEmail()
+            );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
@@ -35,7 +40,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         try {
-            // The usernameOrEmail field will accept either username or email
             String usernameOrEmail = request.getUsername();
             AuthResponse response = authService.login(usernameOrEmail, request.getPassword());
             return ResponseEntity.ok(response);
@@ -69,12 +73,47 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody AuthRequest request) {
+    public ResponseEntity<String> initiatePasswordReset(@RequestBody AuthRequest request) {
         try {
-            authService.resetPassword(request.getUsername());
+            authService.initiatePasswordReset(request.getUsername());
             return ResponseEntity.ok("Password reset link sent to your email");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<AuthResponse> confirmPasswordReset(@RequestBody PasswordResetRequest request) {
+        try {
+            AuthResponse response = authService.confirmPasswordReset(
+                request.getToken(), 
+                request.getNewPassword()
+            );
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new AuthResponse(null, null, false, e.getMessage())
+            );
+        }
+    }
+
+    @GetMapping("/validate-reset-token")
+    public ResponseEntity<AuthResponse> validateResetToken(@RequestParam String token) {
+        try {
+            boolean isValid = authService.validatePasswordResetToken(token);
+            if (isValid) {
+                return ResponseEntity.ok(
+                    new AuthResponse(null, null, true, "Token is valid")
+                );
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new AuthResponse(null, null, false, "Invalid or expired token")
+                );
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new AuthResponse(null, null, false, e.getMessage())
+            );
         }
     }
 }

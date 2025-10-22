@@ -33,6 +33,12 @@ public class AuthService {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Username is required");
         }
+        if (username.length() < 3) {
+            throw new IllegalArgumentException("Username must be at least 3 characters long");
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            throw new IllegalArgumentException("Username can only contain letters, numbers, and underscores");
+        }
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters long");
         }
@@ -162,9 +168,9 @@ public class AuthService {
     }
 
     /**
-     * Reset password (sends reset link)
+     * Initiate password reset (sends reset link)
      */
-    public void resetPassword(String usernameOrEmail) {
+    public void initiatePasswordReset(String usernameOrEmail) {
         if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) {
             throw new IllegalArgumentException("Username or email is required");
         }
@@ -184,10 +190,74 @@ public class AuthService {
         String resetToken = UUID.randomUUID().toString();
         user.setPasswordResetToken(resetToken);
         user.setPasswordResetExpiry(LocalDateTime.now().plusHours(24));
+        user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
         // Send reset email
         emailService.sendPasswordResetEmail(user.getEmail(), user.getUsername(), resetToken);
+    }
+
+    /**
+     * Validate password reset token
+     */
+    public boolean validatePasswordResetToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+
+        Optional<User> userOpt = userRepository.findByPasswordResetToken(token);
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+
+        User user = userOpt.get();
+        
+        // Check if token is expired
+        if (user.getPasswordResetExpiry() == null || 
+            user.getPasswordResetExpiry().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Confirm password reset with new password
+     */
+    public AuthResponse confirmPasswordReset(String token, String newPassword) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Reset token is required");
+        }
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        }
+
+        Optional<User> userOpt = userRepository.findByPasswordResetToken(token);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("Invalid or expired reset token");
+        }
+
+        User user = userOpt.get();
+        
+        // Check if token is expired
+        if (user.getPasswordResetExpiry() == null || 
+            user.getPasswordResetExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Reset token has expired. Please request a new one.");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetExpiry(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return new AuthResponse(
+            user.getId().toString(),
+            user.getUsername(),
+            true,
+            "Password reset successful. You can now log in with your new password."
+        );
     }
 
     /**
@@ -216,6 +286,7 @@ public class AuthService {
         // Generate new verification token if needed
         if (user.getVerificationToken() == null) {
             user.setVerificationToken(UUID.randomUUID().toString());
+            user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
         }
 
