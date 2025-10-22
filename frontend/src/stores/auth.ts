@@ -19,6 +19,6 @@ export const useAuth = create<AuthState>((set) => ({
   logout: () => { set({ user: null, isAuth: false }); localStorage.removeItem("myfin.user"); },
   hydrate: () => {
     const s = localStorage.getItem("myfin.user");
-    if (s) try { const user = JSON.parse(s) as User; set({ user, isAuth: true }); } catch {}
+    if (s) try { const user = JSON.parse(s) as User; set({ user, isAuth: true }); } catch {console.log("Error getting user")}
   },
 }));
