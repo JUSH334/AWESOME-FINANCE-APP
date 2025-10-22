@@ -19,10 +19,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.base-url:http://localhost:8080}")
-    private String baseUrl;
-
-    
+    // Frontend URL for email links (not backend URL!)
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -37,13 +36,16 @@ public class EmailService {
      */
     public void sendVerificationEmail(String toEmail, String username, String verificationToken) {
         try {
-            String verificationUrl = baseUrl + "/api/auth/verify-email?token=" + verificationToken;
+            // Point to FRONTEND verify-email page with token as query param
+            String verificationUrl = frontendUrl + "/verify-email?token=" + verificationToken;
+            
+            logger.info("Sending verification email to: {} with URL: {}", toEmail, verificationUrl);
             
             String subject = "Verify Your Email Address";
             String htmlContent = buildVerificationEmailHtml(username, verificationUrl);
 
             sendHtmlEmail(toEmail, subject, htmlContent);
-            logger.info("Verification email sent to: {}", toEmail);
+            logger.info("Verification email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             logger.error("Failed to send verification email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send verification email", e);
@@ -55,13 +57,16 @@ public class EmailService {
      */
     public void sendPasswordResetEmail(String toEmail, String username, String resetToken) {
         try {
-            String resetUrl = baseUrl + "/api/auth/reset-password?token=" + resetToken;
+            // Point to FRONTEND reset-password-confirm page (NOT /reset-password!)
+            String resetUrl = frontendUrl + "/reset-password-confirm?token=" + resetToken;
+            
+            logger.info("Sending password reset email to: {} with URL: {}", toEmail, resetUrl);
             
             String subject = "Password Reset Request";
             String htmlContent = buildPasswordResetEmailHtml(username, resetUrl);
 
             sendHtmlEmail(toEmail, subject, htmlContent);
-            logger.info("Password reset email sent to: {}", toEmail);
+            logger.info("Password reset email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             logger.error("Failed to send password reset email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send password reset email", e);
@@ -108,17 +113,17 @@ public class EmailService {
                 "</head>" +
                 "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>" +
                 "    <div style='background-color: #f8f9fa; border-radius: 10px; padding: 30px;'>" +
-                "        <h2 style='color: #007bff; margin-top: 0;'>Welcome, " + username + "!</h2>" +
+                "        <h2 style='color: #16a34a; margin-top: 0;'>Welcome, " + username + "!</h2>" +
                 "        <p>Thank you for registering. Please verify your email address to activate your account.</p>" +
                 "        <div style='text-align: center; margin: 30px 0;'>" +
                 "            <a href='" + verificationUrl + "' " +
-                "               style='background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>" +
+                "               style='background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>" +
                 "                Verify Email Address" +
                 "            </a>" +
                 "        </div>" +
                 "        <p style='color: #666; font-size: 14px;'>" +
                 "            If the button doesn't work, copy and paste this link into your browser:<br>" +
-                "            <a href='" + verificationUrl + "' style='color: #007bff; word-break: break-all;'>" + verificationUrl + "</a>" +
+                "            <a href='" + verificationUrl + "' style='color: #16a34a; word-break: break-all;'>" + verificationUrl + "</a>" +
                 "        </p>" +
                 "        <hr style='border: none; border-top: 1px solid #ddd; margin: 20px 0;'>" +
                 "        <p style='color: #999; font-size: 12px;'>" +

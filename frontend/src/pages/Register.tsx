@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Eye, EyeOff, User, Lock, Mail, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, User, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { PasswordStrength } from "../components/PasswordStrength";
+import { PasswordMatchIndicator } from "../components/PasswordMatchIndicator";
 
 const schemaR = z.object({ 
   username: z.string()
@@ -22,48 +24,6 @@ const schemaR = z.object({
 
 type FormR = z.infer<typeof schemaR>;
 
-// Password Strength Component
-function PasswordStrength({ password }: { password: string }) {
-  const getStrength = (pwd: string) => {
-    if (!pwd) return { score: 0, label: '', color: '' };
-    let score = 0;
-    if (pwd.length >= 8) score++;
-    if (pwd.length >= 12) score++;
-    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
-    if (/\d/.test(pwd)) score++;
-    if (/[^a-zA-Z0-9]/.test(pwd)) score++;
-
-    if (score <= 2) return { score, label: 'Weak', color: 'bg-rose-500' };
-    if (score <= 3) return { score, label: 'Fair', color: 'bg-orange-500' };
-    if (score <= 4) return { score, label: 'Good', color: 'bg-blue-500' };
-    return { score, label: 'Strong', color: 'bg-emerald-500' };
-  };
-
-  const strength = getStrength(password);
-  
-  if (!password) return null;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-1">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition-all ${
-              i < strength.score ? strength.color : 'bg-slate-200'
-            }`}
-          />
-        ))}
-      </div>
-      {strength.label && (
-        <p className="text-xs text-slate-600">
-          Password strength: <span className="font-medium">{strength.label}</span>
-        </p>
-      )}
-    </div>
-  );
-}
-
 export default function RegisterPage() {
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormR>({ 
     resolver: zodResolver(schemaR) 
@@ -76,6 +36,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
 
   const password = watch("password", "");
+  const confirm = watch("confirm", "");
 
   const onSubmit = async (v: FormR) => {
     try {
@@ -258,6 +219,11 @@ export default function RegisterPage() {
                   {errors.confirm.message}
                 </p>
               )}
+              <PasswordMatchIndicator 
+                password={password} 
+                confirm={confirm} 
+                showMatch={confirm.length > 0}
+              />
             </div>
 
             <button 

@@ -97,6 +97,32 @@ export const api = {
     return true;
   },
 
+  async validateResetToken(token: string): Promise<boolean> {
+    const response = await fetch(`${API_BASE_URL}/auth/validate-reset-token?token=${encodeURIComponent(token)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Invalid token");
+    }
+    
+    return true;
+  },
+
+  async confirmPasswordReset(token: string, newPassword: string): Promise<true> {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    
+    await handleAuthResponse(response);
+    return true;
+  },
+
   async getDashboard(): Promise<DashboardData> {
     return demoDashboard;
   },

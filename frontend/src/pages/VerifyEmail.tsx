@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { api } from "../services/api";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
@@ -7,6 +7,9 @@ export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
+  
+  // Prevent double API calls in React StrictMode
+  const hasVerified = useRef(false);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -16,6 +19,12 @@ export default function VerifyEmailPage() {
       setMessage("Invalid verification link. No token provided.");
       return;
     }
+
+    // Prevent multiple calls
+    if (hasVerified.current) {
+      return;
+    }
+    hasVerified.current = true;
 
     api.verifyEmail(token)
       .then(() => {
