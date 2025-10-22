@@ -12,8 +12,6 @@ import VerifyEmailPage from "./pages/VerifyEmail";
 import DashboardPage from "./pages/Dashboard";
 import AccountsPage from "./pages/Accounts";
 import BudgetsPage from "./pages/Budgets";
-import TransactionsPage from "./pages/Transactions";
-import CalculatorPage from "./pages/Calculator";
 import ProfilePage from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -36,8 +34,6 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
-            <Route path="/transactions" element={<TransactionsPage />} />
-            <Route path="/calculator" element={<CalculatorPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
