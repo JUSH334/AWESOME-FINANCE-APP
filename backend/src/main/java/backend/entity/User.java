@@ -38,6 +38,15 @@ public class User {
     @Column(name = "is_email_verified")
     private Boolean isEmailVerified = false;
 
+    @Column(name = "verification_token", length = 255)
+    private String verificationToken;
+
+    @Column(name = "password_reset_token", length = 255)
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expiry")
+    private LocalDateTime passwordResetExpiry;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -51,7 +60,6 @@ public class User {
     public User() {}
 
     // Getters and Setters
-    // (You can use Lombok annotations like @Data or @Getter/@Setter if preferred)
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -75,6 +83,15 @@ public class User {
 
     public Boolean getIsEmailVerified() { return isEmailVerified; }
     public void setIsEmailVerified(Boolean isEmailVerified) { this.isEmailVerified = isEmailVerified; }
+
+    public String getVerificationToken() { return verificationToken; }
+    public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
+
+    public String getPasswordResetToken() { return passwordResetToken; }
+    public void setPasswordResetToken(String passwordResetToken) { this.passwordResetToken = passwordResetToken; }
+
+    public LocalDateTime getPasswordResetExpiry() { return passwordResetExpiry; }
+    public void setPasswordResetExpiry(LocalDateTime passwordResetExpiry) { this.passwordResetExpiry = passwordResetExpiry; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
