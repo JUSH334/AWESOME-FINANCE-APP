@@ -41,11 +41,11 @@ export const api = {
     };
   },
 
-  async register(username: string, password: string, email: string): Promise<User> {
+  async register(username: string, password: string, email: string, firstName: string, lastName: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, email }),
+      body: JSON.stringify({ username, password, email, firstName, lastName }),
     });
     
     const data = await handleAuthResponse(response);
@@ -55,6 +55,19 @@ export const api = {
       email: data.username,
       name: data.username,
     };
+  },
+
+  async changeUsername(email: string, password: string, newUsername: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/auth/change-username`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, username: newUsername }),
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || data.error || "Failed to change username");
+    }
   },
 
   async verifyEmail(token: string): Promise<true> {
@@ -96,6 +109,8 @@ export const api = {
     
     return true;
   },
+
+  
 
   async validateResetToken(token: string): Promise<boolean> {
     const response = await fetch(`${API_BASE_URL}/auth/validate-reset-token?token=${encodeURIComponent(token)}`, {

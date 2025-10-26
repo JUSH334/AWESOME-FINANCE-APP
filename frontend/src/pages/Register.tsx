@@ -14,6 +14,8 @@ const schemaR = z.object({
     .min(3, "Username must be at least 3 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   email: z.string().email("Please enter a valid email"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirm: z.string().min(8, "Confirm password must be at least 8 characters"),
 })
@@ -44,7 +46,7 @@ export default function RegisterPage() {
   const onSubmit = async (v: FormR) => {
     try {
       setApiError("");
-      await api.register(v.username, v.password, v.email);
+      await api.register(v.username, v.password, v.email, v.firstName, v.lastName);
       setEmail(v.email);
       setShowSuccess(true);
     } catch (err) {
@@ -244,6 +246,48 @@ export default function RegisterPage() {
                 )}
                 {!errors.email && (
                   <p className="text-xs text-slate-500">We'll send a verification link to this email</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">First Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <input 
+                    className={`w-full rounded-xl border ${
+                      errors.firstName ? 'border-rose-300 focus:ring-rose-500' : 'border-slate-300 focus:border-emerald-500'
+                    } pl-10 pr-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all`}
+                    placeholder="Enter your first name"
+                    autoComplete="given-name"
+                    {...register("firstName")} 
+                  />
+                </div>
+                {errors.firstName && (
+                  <p className="text-sm text-rose-600 flex items-center gap-1">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {errors.firstName.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Last Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <input 
+                    className={`w-full rounded-xl border ${
+                      errors.lastName ? 'border-rose-300 focus:ring-rose-500' : 'border-slate-300 focus:border-emerald-500'
+                    } pl-10 pr-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all`}
+                    placeholder="Enter your last name"
+                    autoComplete="family-name"
+                    {...register("lastName")} 
+                  />
+                </div>
+                {errors.lastName && (
+                  <p className="text-sm text-rose-600 flex items-center gap-1">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {errors.lastName.message}
+                  </p>
                 )}
               </div>
 

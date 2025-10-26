@@ -4,6 +4,7 @@ import backend.dto.AuthRequest;
 import backend.dto.AuthResponse;
 import backend.dto.PasswordResetRequest;
 import backend.service.AuthService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,9 @@ public class AuthController {
             AuthResponse response = authService.register(
                 request.getUsername(), 
                 request.getPassword(), 
-                request.getEmail()
+                request.getEmail(),
+                request.getFirstName(),
+                request.getLastName()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -110,6 +113,20 @@ public class AuthController {
                     new AuthResponse(null, null, false, "Invalid or expired token")
                 );
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new AuthResponse(null, null, false, e.getMessage())
+            );
+        }
+    }
+
+    @PostMapping("/change-username")
+    public ResponseEntity<AuthResponse> changeUsername(@RequestBody AuthRequest request) {
+        try {
+            authService.changeUsername(request.getEmail(), request.getPassword(), request.getUsername());
+            return ResponseEntity.ok(
+                new AuthResponse(null, request.getUsername(), true, "Username changed successfully")
+            );
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 new AuthResponse(null, null, false, e.getMessage())
