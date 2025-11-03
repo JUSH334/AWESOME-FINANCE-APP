@@ -1,0 +1,38 @@
+are l
+{55: C0 erce Bah-1‘ mh- FDIC;
+1000 Walnut
+Kansas City MO 64106—3686
+Jane Customer
+1234 Anywhere Dr.
+Small Town, MO 12345-6789
+Primary Acccunt Number: 000009752
+
+Bank Statement
+Ifycu have any quasricns about your statement, Statement Date: June 5, 2003
+please ca!!! us at 816-234-2265 Page Number: 1
+CONNECTIONS CHECKING Acccunt # 000009752
+Acccunt Summary Acccunt # 000009752
+Beginning Balance cn Mayr 3, 2003 $7,126.11
+Depcsits 8 Other Credits +3,615.08
+ATM Withdrawals 8 Debits -20.00
+VISA Check Card Purchases 8 Debits -0.00
+Withdrawals 8 Other Debits -0.00
+Checks Paid -200.00
+
+Ending Balance cn June 5, 2003 $10,521.19
+Depcsits 8 Other Credits Acccunt # 000009752
+Descripticn Date Credited Amcunt
+Depcsit Ref N br: 130012345 05-15 $3,615.08
+Tctal Depcsits 8 Other Credits $3,615.08
+ATM Withdrawals & Debits Acccunt # 000009752
+Descripticn Tran Date Date Paid Amcunt
+ATM Withdrawal
+1000 Walnut St M119
+Kansas City MO 00005678 05-18 05-19 $20.00
+Total ATM Withdrawals 8 Debits $20.00
+Checks Paid Acccunt # 000009752
+Date Paid Check Number Amcunt Reference Number
+05-12 1001 75.00 00012576589
+05-18 1002 30.00 0003 6547854
+05-24 1003 200.00 00094613 547
+Tctal Checks Paid $305.00
