@@ -177,9 +177,14 @@ export default function LoginPage() {
                   />
                   <span className="text-slate-600">Remember me</span>
                 </label>
-                <Link to="/reset-password" className="text-sm text-emerald-700 hover:text-emerald-800 font-medium">
-                  Forgot password?
-                </Link>
+                <div className="flex flex-col items-end gap-1">
+                  <Link to="/reset-password" className="text-sm text-emerald-700 hover:text-emerald-800 font-medium">
+                    Forgot password?
+                  </Link>
+                  <Link to="/change-username" className="text-xs text-slate-600 hover:text-emerald-700">
+                    Change username?
+                  </Link>
+                </div>
               </div>
 
               <button
