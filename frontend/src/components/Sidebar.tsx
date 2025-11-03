@@ -1,5 +1,5 @@
 ﻿﻿import { NavLink, Link } from "react-router-dom";
-import { LayoutDashboard, Wallet, PiggyBank, User, Settings } from "lucide-react";
+import { LayoutDashboard, Wallet, PiggyBank, User, Settings, Brain } from "lucide-react";
 
 export default function Sidebar() {
   return (
@@ -63,6 +63,18 @@ export default function Sidebar() {
         >
           <PiggyBank className="w-4 h-4" />
           Budgets
+        </NavLink>
+
+        <NavLink
+          to="/ai-insights"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
+              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
+            }`
+          }
+        >
+          <Brain className="w-4 h-4" />
+          AI Insights
         </NavLink>
 
         <NavLink

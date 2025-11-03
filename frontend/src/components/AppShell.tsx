@@ -15,6 +15,7 @@ export default function AppShell() {
     if (path === "/dashboard") return "Dashboard";
     if (path === "/accounts") return "Accounts";
     if (path === "/budgets") return "Budgets";
+    if (path === "/ai-insights") return "AI Insights";
     if (path === "/transactions") return "Transactions";
     if (path === "/profile") return "Profile";
     if (path === "/settings") return "Settings";

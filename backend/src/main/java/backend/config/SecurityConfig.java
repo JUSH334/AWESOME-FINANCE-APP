@@ -28,11 +28,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/ai/**").permitAll()  // Add AI endpoints
                 .requestMatchers("/test-db").permitAll()
                 .requestMatchers("/").permitAll()
                 .anyRequest().authenticated()
-            )
-            .httpBasic(basic -> {});
+            );
+            // REMOVED: .httpBasic(basic -> {});
 
         return http.build();
     }
