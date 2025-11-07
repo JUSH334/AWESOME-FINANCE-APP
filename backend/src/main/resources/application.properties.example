@@ -1,1 +1,35 @@
 
+spring.application.name=backend
+
+# Database Configuration
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Email Configuration (SMTP)
+# For Gmail:
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=
+spring.mail.password=
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+
+# For other email providers, adjust the host and port:
+# Outlook: smtp-mail.outlook.com, port 587
+# Yahoo: smtp.mail.yahoo.com, port 587
+# SendGrid: smtp.sendgrid.net, port 587
+# Mailgun: smtp.mailgun.org, port 587
+
+# Application URL (for email links)
+backend.base-url=http://localhost:8080
+app.base-url=http://localhost:5173
+app.frontend-url=http://localhost:5173
