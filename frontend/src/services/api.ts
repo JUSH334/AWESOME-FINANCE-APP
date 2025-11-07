@@ -3,14 +3,37 @@ import type { DashboardData, Account, Txn, User } from "../types";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
+// JWT Token Management
+const TOKEN_KEY = "myfin.jwt";
+
+export const tokenManager = {
+  getToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+  },
+  
+  setToken(token: string): void {
+    localStorage.setItem(TOKEN_KEY, token);
+  },
+  
+  removeToken(): void {
+    localStorage.removeItem(TOKEN_KEY);
+  },
+  
+  getAuthHeader(): HeadersInit {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+};
+
 interface AuthApiResponse {
   id: string;
   username: string;
   success: boolean;
   message: string;
+  token?: string; // JWT token
 }
 
-// AI Types
+// AI Types (same as before)
 export interface AIAccount {
   id: string;
   type: string;
@@ -83,11 +106,16 @@ const handleAuthResponse = async (response: Response): Promise<AuthApiResponse> 
     throw new Error(data.message || "Authentication failed");
   }
   
+  // Store JWT token if present
+  if (data.token) {
+    tokenManager.setToken(data.token);
+  }
+  
   return data;
 };
 
 export const api = {
-  // ========== EXISTING AUTH METHODS ==========
+  // ========== AUTH METHODS WITH JWT ==========
   
   async login(usernameOrEmail: string, password: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -124,7 +152,10 @@ export const api = {
   async changeUsername(email: string, password: string, newUsername: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/auth/change-username`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...tokenManager.getAuthHeader()
+      },
       body: JSON.stringify({ email, password, username: newUsername }),
     });
     
@@ -200,7 +231,11 @@ export const api = {
     return true;
   },
 
-  // ========== EXISTING DATA METHODS ==========
+  logout() {
+    tokenManager.removeToken();
+  },
+
+  // ========== DATA METHODS WITH JWT ==========
 
   async getDashboard(): Promise<DashboardData> {
     return demoDashboard;
@@ -214,13 +249,16 @@ export const api = {
     return demoTxns;
   },
 
-  // ========== NEW AI METHODS ==========
+  // ========== AI METHODS WITH JWT ==========
 
   async getAIRecommendations(request: AIRequest): Promise<AIRecommendationResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/ai/recommendations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        },
         body: JSON.stringify(request),
       });
 
@@ -246,7 +284,10 @@ export const api = {
     try {
       const response = await fetch(`${API_BASE_URL}/ai/health`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        },
       });
 
       if (!response.ok) {
@@ -263,7 +304,10 @@ export const api = {
     try {
       const response = await fetch(`${API_BASE_URL}/ai/status`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        },
       });
 
       if (!response.ok) {
@@ -280,7 +324,10 @@ export const api = {
     try {
       const response = await fetch(`${API_BASE_URL}/ai/demo`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        },
       });
 
       if (!response.ok) {

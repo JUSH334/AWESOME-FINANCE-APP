@@ -3,6 +3,7 @@ package backend.service;
 import backend.dto.AuthResponse;
 import backend.entity.User;
 import backend.repository.UserRepository;
+import backend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,12 +25,14 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final JwtUtil jwtUtil; // ADD THIS
 
     @Autowired
-    public AuthService(UserRepository userRepository, EmailService emailService) {
+    public AuthService(UserRepository userRepository, EmailService emailService, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.emailService = emailService;
+        this.jwtUtil = jwtUtil; // ADD THIS
     }
 
     /**
@@ -100,6 +105,7 @@ public class AuthService {
 
     /**
      * Login user with credential validation (accepts username or email)
+     * NOW RETURNS JWT TOKEN
      */
     public AuthResponse login(String usernameOrEmail, String password) {
         // Validation
@@ -141,11 +147,18 @@ public class AuthService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
+        // Generate JWT token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId().toString());
+        claims.put("email", user.getEmail());
+        String token = jwtUtil.generateToken(user.getUsername(), claims);
+
         return new AuthResponse(
             user.getId().toString(),
             user.getUsername(),
             true,
-            "Login successful"
+            "Login successful",
+            token  // Include JWT token
         );
     }
 

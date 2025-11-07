@@ -5,16 +5,26 @@ public class AuthResponse {
     private String username;
     private boolean success;
     private String message;
+    private String token; // JWT token
 
     // Default constructor
     public AuthResponse() {}
 
-    // Constructor with 4 parameters
+    // Constructor with 4 parameters (backward compatible)
     public AuthResponse(String id, String username, boolean success, String message) {
         this.id = id;
         this.username = username;
         this.success = success;
         this.message = message;
+    }
+
+    // Constructor with token
+    public AuthResponse(String id, String username, boolean success, String message, String token) {
+        this.id = id;
+        this.username = username;
+        this.success = success;
+        this.message = message;
+        this.token = token;
     }
 
     // Getters and Setters
@@ -48,5 +58,13 @@ public class AuthResponse {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }
