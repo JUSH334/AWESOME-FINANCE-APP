@@ -66,14 +66,14 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    // Extract all claims - FIXED: Using new parser API
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
+    // Extract all claims
+    public Claims extractAllClaims(String token) {  // Changed from private to public
+    return Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+}
 
     // Check if token is expired
     private Boolean isTokenExpired(String token) {

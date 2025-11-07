@@ -235,6 +235,26 @@ export const api = {
     tokenManager.removeToken();
   },
 
+   async getCurrentUser(): Promise<User | null> {
+    const token = tokenManager.getToken();
+    if (!token) return null;
+
+    try {
+      // Decode JWT client-side (basic approach)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      
+      return {
+        id: payload.userId,
+        email: payload.email,
+        name: payload.sub, // subject is username
+      };
+    } catch (error) {
+      tokenManager.removeToken();
+      return null;
+    }
+  },
+
+
   // ========== DATA METHODS WITH JWT ==========
 
   async getDashboard(): Promise<DashboardData> {

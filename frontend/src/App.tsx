@@ -1,8 +1,6 @@
 ﻿// Save as: frontend/src/App.tsx
-// REPLACE YOUR EXISTING App.tsx WITH THIS
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./stores/auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
@@ -17,12 +15,29 @@ import AccountsPage from "./pages/Accounts";
 import BudgetsPage from "./pages/Budgets";
 import ProfilePage from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
-import AIInsightsPage from "./pages/AIInsights";  // NEW
+import AIInsightsPage from "./pages/AIInsights";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
   const hydrate = useAuth(s => s.hydrate);
-  useEffect(() => { hydrate(); }, [hydrate]);
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  useEffect(() => {
+    // Wait for hydration to complete
+    hydrate().finally(() => setIsHydrating(false));
+  }, [hydrate]);
+
+  // Show loading state while hydrating
+  if (isHydrating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <BrowserRouter>
@@ -42,7 +57,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
-            <Route path="/ai-insights" element={<AIInsightsPage />} />  {/* NEW */}
+            <Route path="/ai-insights" element={<AIInsightsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
