@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.pdfparser</groupId>
+    <artifactId>pdf-parser-unified</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Unified PDF Text Parser</name>
+    <description>PDF to text parser with optional OCR support</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <pdfbox.version>3.0.1</pdfbox.version>
+    </properties>
+
+    <dependencies>
+        <!-- Apache PDFBox - Required -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+        
+        <!-- Tess4J for OCR - Optional (comment out if not needed) -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>5.9.0</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin - Create executable JAR with dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>PDFParserUnified</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>pdf-parser-unified</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Build profiles for different configurations -->
+    <profiles>
+        <!-- Profile without OCR support -->
+        <profile>
+            <id>no-ocr</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.pdfbox</groupId>
+                    <artifactId>pdfbox</artifactId>
+                    <version>${pdfbox.version}</version>
+                </dependency>
+                <!-- Tess4J excluded in this profile -->
+            </dependencies>
+        </profile>
+        
+        <!-- Profile with OCR support (default) -->
+        <profile>
+            <id>with-ocr</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.pdfbox</groupId>
+                    <artifactId>pdfbox</artifactId>
+                    <version>${pdfbox.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>net.sourceforge.tess4j</groupId>
+                    <artifactId>tess4j</artifactId>
+                    <version>5.9.0</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+</project>

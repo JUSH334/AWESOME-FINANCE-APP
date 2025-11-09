@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.pdfparser'
+version = '1.0.0'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Apache PDFBox
+    implementation 'org.apache.pdfbox:pdfbox:3.0.1'
+}
+
+application {
+    mainClass = 'PDFParser'
+}
+
+// Create executable JAR with dependencies
+shadowJar {
+    archiveBaseName.set('pdf-parser')
+    archiveClassifier.set('')
+    archiveVersion.set('')
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

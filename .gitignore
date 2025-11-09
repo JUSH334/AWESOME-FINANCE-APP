@@ -1,7 +1,0 @@
-*.jar
-*.class
-output.txt
-.idea/
-.vscode/
-target/
-build/

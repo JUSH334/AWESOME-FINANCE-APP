@@ -1,0 +1,55 @@
+{
+  "accountNumber": "000009752",
+  "accountHolderName": "",
+  "statementDate": "2003-06-05",
+  "startDate": "2003-05-03",
+  "endDate": "2003-05-03",
+  "beginningBalance": 7126.11,
+  "endingBalance": 10521.19,
+  "totalDeposits": 3615.08,
+  "totalWithdrawals": 0,
+  "totalATMWithdrawals": 20.00,
+  "totalChecks": 200.00,
+  "totalFees": 0,
+  "transactions": [
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2003-05-15",
+      "description": "Deposit",
+      "amount": 3615.08,
+      "referenceNumber": "130012345"
+    },
+    {
+      "type": "ATM_WITHDRAWAL",
+      "transactionDate": "2003-05-18",
+      "postedDate": "2003-05-19",
+      "description": "ATM Withdrawal at 1000 Walnut St M119",
+      "amount": 20.00,
+      "location": "1000 Walnut St M119, Kansas City MO 00005678"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2003-05-12",
+      "description": "Check #1001",
+      "amount": 75.00,
+      "checkNumber": "1001",
+      "referenceNumber": "00012576589"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2003-05-18",
+      "description": "Check #1002",
+      "amount": 30.00,
+      "checkNumber": "1002",
+      "referenceNumber": "00036547854"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2003-05-24",
+      "description": "Check #1003",
+      "amount": 200.00,
+      "checkNumber": "1003",
+      "referenceNumber": "00094613547"
+    }
+  ]
+}
