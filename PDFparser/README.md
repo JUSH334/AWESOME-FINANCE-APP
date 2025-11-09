@@ -145,13 +145,10 @@ public class MyApp {
 
 ## Features
 
-- ✅ Extract text from all pages in a PDF
-- ✅ Optional page separators with page numbers
-- ✅ Return as String or save to file
-- ✅ Handle multi-page documents
-- ✅ Command-line interface
-- ✅ Programmatic API
-- ✅ Customizable page separators
+- Extract text from all pages in a PDF
+- Optional page separators with page numbers
+- Return as String or save to file
+- Handle multi-page documents
 
 ## Dependencies
 
