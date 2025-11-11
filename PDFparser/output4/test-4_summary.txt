@@ -1,0 +1,21 @@
+=== Bank Statement Summary ===
+Account: 104798467080
+Account Holder: BIG BS BBQ
+Statement Date: null
+Period: null to 2023-03-31
+
+--- Balances ---
+Beginning Balance: $0.00
+Ending Balance:    $0.00
+
+--- Activity ---
+Total Deposits:        $82,474.00
+Total Withdrawals:     $2,220.38
+Total ATM Withdrawals: $9,549.00
+Total Checks:          $15,460.00
+
+--- Transactions ---
+Total Transactions: 30
+
+--- Validation ---
+Balance Check: ✗ FAILED

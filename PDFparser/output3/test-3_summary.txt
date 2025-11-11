@@ -1,0 +1,21 @@
+=== Bank Statement Summary ===
+Account: null
+Account Holder: DEBORAH D GREENE
+Statement Date: 2016-03-14
+Period: null to null
+
+--- Balances ---
+Beginning Balance: $0.00
+Ending Balance:    $7,130.67
+
+--- Activity ---
+Total Deposits:        $13,472.80
+Total Withdrawals:     $17,521.28
+Total ATM Withdrawals: $0.00
+Total Checks:          $17,521.28
+
+--- Transactions ---
+Total Transactions: 131
+
+--- Validation ---
+Balance Check: ✗ FAILED

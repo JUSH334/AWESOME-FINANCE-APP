@@ -1,0 +1,151 @@
+{
+  "accountNumber": "12345678",
+  "accountHolderName": "JAMES C. MORRISON",
+  "statementDate": "null",
+  "startDate": "null",
+  "endDate": "null",
+  "beginningBalance": 643.24,
+  "endingBalance": 643.24,
+  "totalDeposits": 876.02,
+  "totalWithdrawals": 320.02,
+  "totalATMWithdrawals": 140.00,
+  "totalChecks": 9.98,
+  "totalFees": 12.00,
+  "transactions": [
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-02",
+      "description": "POS PURCHASE",
+      "amount": 4.23
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-10-03",
+      "description": "PREAUTHORIZEDCREDIT",
+      "amount": 763.01
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-04",
+      "description": "POS PURCHASE",
+      "amount": 11.68
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-05",
+      "description": "CHECK1234",
+      "amount": 9.98,
+      "checkNumber": "1234"
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-05",
+      "description": "POS PURCHASE",
+      "amount": 25.50
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-08",
+      "description": "POS PURCHASE",
+      "amount": 59.08
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-12",
+      "description": "CHECK1236",
+      "amount": 69.00,
+      "checkNumber": "1236"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-14",
+      "description": "CHECK1237",
+      "amount": 180.63,
+      "checkNumber": "1237"
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-14",
+      "description": "POS PURCHASE",
+      "amount": 18.96
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-10-16",
+      "description": "PREAUTHORIZEDCREDIT",
+      "amount": 763.01
+    },
+    {
+      "type": "ATM_WITHDRAWAL",
+      "transactionDate": "2025-10-22",
+      "description": "ATM WITHDRAWAL",
+      "amount": 140.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-28",
+      "description": "CHECK1238",
+      "amount": 91.06,
+      "checkNumber": "1238"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-30",
+      "description": "CHECK1239",
+      "amount": 451.20,
+      "checkNumber": "1239"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-30",
+      "description": "CHECK1246",
+      "amount": 37.07,
+      "checkNumber": "1246"
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-10-30",
+      "description": "POS PURCHASE",
+      "amount": 18.67
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-31",
+      "description": "CHECK1247",
+      "amount": 100.00,
+      "checkNumber": "1247"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-10-31",
+      "description": "CHECK1248",
+      "amount": 78.24,
+      "checkNumber": "1248"
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-10-31",
+      "description": "PREAUTHORIZEDCREDIT",
+      "amount": 350.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-11-02",
+      "description": "CHECK1249",
+      "amount": 52.23,
+      "checkNumber": "1249"
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-11-09",
+      "description": "INTERESTCREDIT",
+      "amount": 0.26
+    },
+    {
+      "type": "FEE",
+      "transactionDate": "2025-11-09",
+      "description": "SERVICE CHARGE",
+      "amount": 12.00
+    }
+  ]
+}

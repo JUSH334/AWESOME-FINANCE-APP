@@ -3,12 +3,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * Bank Statement Extractor
+ * Bank Statement Extractor - FIXED VERSION
+ * Uses PDFParserUnified for proper OCR support
  * Main integration class that combines PDF parsing, OCR correction, and data extraction
- * 
- * Usage:
- *   BankStatementExtractor extractor = new BankStatementExtractor();
- *   BankStatement statement = extractor.extractFromPDF("statement.pdf");
  */
 public class BankStatementExtractor {
     
@@ -31,7 +28,7 @@ public class BankStatementExtractor {
     public BankStatement extractFromPDF(String pdfPath) throws IOException {
         log("Starting extraction from: " + pdfPath);
         
-        // Step 1: Extract raw text from PDF
+        // Step 1: Extract raw text from PDF using PDFParserUnified (with OCR support)
         log("Step 1: Extracting text from PDF...");
         String rawText = PDFParserUnified.parsePDFToText(pdfPath);
         log("Extracted " + rawText.length() + " characters");
@@ -45,9 +42,9 @@ public class BankStatementExtractor {
             log("OCR Corrections: " + stats.get("words_changed") + " words changed");
         }
         
-        // Step 3: Parse corrected text into structured data
+        // Step 3: Parse corrected text into structured data using SmartBankStatementParser
         log("Step 3: Parsing statement data...");
-        BankStatement statement = BankStatementParser.parseStatement(correctedText);
+        BankStatement statement = SmartBankStatementParser.parseStatement(correctedText);
         
         log("Extraction complete!");
         log("Found " + statement.getTransactions().size() + " transactions");
@@ -77,9 +74,9 @@ public class BankStatementExtractor {
         String pdfFileName = new File(pdfPath).getName();
         String baseName = pdfFileName.substring(0, pdfFileName.lastIndexOf('.'));
         
-        // Save corrected text
+        // Save corrected text - use PDFParserUnified to get the OCR'd text
         String correctedTextPath = outputDir + File.separator + baseName + "_corrected.txt";
-        String rawText = PDFParser.parsePDFToText(pdfPath);
+        String rawText = PDFParserUnified.parsePDFToText(pdfPath);
         String correctedText = OCRCorrector.correctText(rawText);
         saveToFile(correctedText, correctedTextPath);
         log("Saved corrected text to: " + correctedTextPath);
@@ -220,7 +217,7 @@ public class BankStatementExtractor {
     }
     
     private static void printUsage() {
-        System.out.println("Bank Statement Extractor");
+        System.out.println("Bank Statement Extractor (Smart Generic Parser)");
         System.out.println("Extracts structured data from bank statement PDFs");
         System.out.println("\nUsage: java BankStatementExtractor <pdf-file> [options]");
         System.out.println("\nOptions:");
@@ -241,6 +238,7 @@ public class BankStatementExtractor {
         System.out.println("  <basename>_transactions.csv - Transaction list");
         System.out.println("\nFeatures:");
         System.out.println("  • Automatic OCR error correction");
+        System.out.println("  • Smart generic parsing (works with multiple bank formats)");
         System.out.println("  • Extracts account info, balances, and transactions");
         System.out.println("  • Validates statement balances");
         System.out.println("  • Exports to multiple formats (JSON, CSV, TXT)");

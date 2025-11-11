@@ -1,8 +1,8 @@
 === Bank Statement Summary ===
 Account: 000009752
-Account Holder: null
+Account Holder: Jane Customer
 Statement Date: 2003-06-05
-Period: 2003-05-03 to 2003-05-03
+Period: 2003-05-03 to 2003-06-05
 
 --- Balances ---
 Beginning Balance: $7,126.11
@@ -10,7 +10,7 @@ Ending Balance:    $10,521.19
 
 --- Activity ---
 Total Deposits:        $3,615.08
-Total Withdrawals:     $0.00
+Total Withdrawals:     $20.00
 Total ATM Withdrawals: $20.00
 Total Checks:          $200.00
 
@@ -18,4 +18,4 @@ Total Checks:          $200.00
 Total Transactions: 5
 
 --- Validation ---
-Balance Check: ✓ PASSED
+Balance Check: ✗ FAILED

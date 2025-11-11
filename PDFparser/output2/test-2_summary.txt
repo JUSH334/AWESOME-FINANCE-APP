@@ -1,0 +1,22 @@
+=== Bank Statement Summary ===
+Account: 12345678
+Account Holder: JAMES C. MORRISON
+Statement Date: null
+Period: null to null
+
+--- Balances ---
+Beginning Balance: $643.24
+Ending Balance:    $643.24
+
+--- Activity ---
+Total Deposits:        $876.02
+Total Withdrawals:     $320.02
+Total ATM Withdrawals: $140.00
+Total Checks:          $9.98
+Total Fees:            $12.00
+
+--- Transactions ---
+Total Transactions: 21
+
+--- Validation ---
+Balance Check: ✗ FAILED

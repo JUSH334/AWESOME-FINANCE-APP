@@ -126,9 +126,25 @@ public class Transaction {
             // Continue to other formats
         }
         
+        // Try parsing MM/dd format (like "10/02")
+        try {
+            MonthDay monthDay = MonthDay.parse(dateStr, DateTimeFormatter.ofPattern("MM/dd"));
+            return monthDay.atYear(year);
+        } catch (DateTimeParseException e) {
+            // Continue to other formats
+        }
+        
         // Try parsing M-dd format (like "5-15")
         try {
             MonthDay monthDay = MonthDay.parse(dateStr, DateTimeFormatter.ofPattern("M-dd"));
+            return monthDay.atYear(year);
+        } catch (DateTimeParseException e) {
+            // Continue to other formats
+        }
+        
+        // Try parsing M/dd format (like "5/15")
+        try {
+            MonthDay monthDay = MonthDay.parse(dateStr, DateTimeFormatter.ofPattern("M/dd"));
             return monthDay.atYear(year);
         } catch (DateTimeParseException e) {
             // Continue to other formats
@@ -138,6 +154,7 @@ public class Transaction {
         DateTimeFormatter[] formatters = {
             DateTimeFormatter.ofPattern("MM/dd/yyyy"),
             DateTimeFormatter.ofPattern("M/dd/yyyy"),
+            DateTimeFormatter.ofPattern("MM-dd-yyyy"),
             DateTimeFormatter.ofPattern("MMM dd, yyyy"),
             DateTimeFormatter.ofPattern("MMM d, yyyy")
         };

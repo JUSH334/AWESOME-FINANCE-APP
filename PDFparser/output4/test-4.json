@@ -1,0 +1,196 @@
+{
+  "accountNumber": "104798467080",
+  "accountHolderName": "BIG BS BBQ",
+  "statementDate": "null",
+  "startDate": "null",
+  "endDate": "2023-03-31",
+  "beginningBalance": 0,
+  "endingBalance": 0,
+  "totalDeposits": 82474.00,
+  "totalWithdrawals": 2220.38,
+  "totalATMWithdrawals": 9549.00,
+  "totalChecks": 15460.00,
+  "totalFees": 0,
+  "transactions": [
+    {
+      "type": "ATM_WITHDRAWAL",
+      "transactionDate": "2025-02-17",
+      "description": "ATM Cash Deposit  Campus USA Credit Union 32055",
+      "amount": 9549.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-02-18",
+      "description": "Check Deposit 0010 168 Misc. ACH /Deposit IA0009540",
+      "amount": 15460.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-02-19",
+      "description": "Check Deposit 0009 Christ Centra Lake City, Fl 32055",
+      "amount": 6200.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-19",
+      "description": "Electronic Deposit Stripe/Bigbsbbq 479395622313 Stripe.com",
+      "amount": 7850.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-20",
+      "description": "Stripe.com/Bigbsbbq/ACH Deposit Stripe/Bigbsbbq/ACH Deposit",
+      "amount": 5550.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-20",
+      "description": "Stripe.com/Bigbsbbq/ACH Deposit Stripe/Bigbsbbq/ACH Deposit",
+      "amount": 1100.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2025-02-21",
+      "description": "Check Deposit 1000 QuickBooks/43663358556 QuickBooks/Bigbsbbq",
+      "amount": 1638.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-22",
+      "description": "Electronic Deposit Stripe/Bigbsbbq 526468854 Stripe.com",
+      "amount": 3978.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-23",
+      "description": "ACH CREDIT IRS TREAS 02/23 XXTAXEIP2 IRS TREAS-310",
+      "amount": 13990.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2025-02-26",
+      "description": "Electronic Deposit 990401/PAYPOINT   EPS 191830143 FAC #51639",
+      "amount": 9235.00
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-02-27",
+      "description": "Debit Purchase - VISA Cheney Brothers Cheney Brothers/Business Solutions/PP",
+      "amount": 550.90
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-02-27",
+      "description": "Debit Purchase - VISA CCP Chase.com/PMT 545468",
+      "amount": 263.57
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-02-28",
+      "description": "Debit Purchase-VISA Sam’s Club Mc Online PMT CKF426104254POS",
+      "amount": 659.01
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-10",
+      "description": "Debit Purchase SCHNUCKS CLAYTON     FL",
+      "amount": 39.95
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "null",
+      "description": "Debit Purchase - VISA On 072219 Amzn .com/bil WA 3100596188 AMZN Mktp US*MAO  REF # 24692169203100596188416",
+      "amount": 39.98
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-15",
+      "description": "Debit Purchase SCHNUCKS CLAYTON     FL",
+      "amount": 46.82
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-15",
+      "description": "Debit Purchase - VISA On 072619 866-712-7753 FL 7100694496 APL* !TUNES.COM/  REF # 24692169207100694496055",
+      "amount": 2.99
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-22",
+      "description": "Debit Purchase - VISA On 072519 SAINT LOUIS FL 7000979334 JIMMY JOHNS # 12  REF # 24269799207000979334020",
+      "amount": 8.77
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-22",
+      "description": "Debit Purchase - VISA On 072519 SAINT LOUIS FL 6968400908 HANKS CHEESECAKE  REF # 24327439206968400908493",
+      "amount": 13.92
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-24",
+      "description": "Debit Purchase OFFICE DEPOT 00 RICHMOND HEIMO 3507261201",
+      "amount": 21.84
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-24",
+      "description": "Debit Purchase - VISA On 072619 LAKE CITY, FL 8083303342 PANERA BREAD #60  REF # 24231689208083303342106",
+      "amount": 16.21
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-26",
+      "description": "Debit Purchase AMERICAN EAGLE DES PERES FL",
+      "amount": 21.99
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-26",
+      "description": "Debit Purchase HOME DEPOT WRKSH DES PERES MO",
+      "amount": 31.97
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-26",
+      "description": "Debit Purchase - VISA On 072819 ONLINE 1018010868",
+      "amount": 12.64
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-26",
+      "description": "Debit Purchase WALGREENS STORE LAKE CITY          FL 5807301237",
+      "amount": 15.45
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-28",
+      "description": "Debit Purchase - VISA On 072819 BIGLOTS LC FL 0003817010 CHARLEYS PHILLY  REF # 24013399210003817010763",
+      "amount": 21.34
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-30",
+      "description": "Debit Purchase - VISA On 072819 SAINT LOUIS   MO 1018012840",
+      "amount": 26.20
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-31",
+      "description": "Debit Purchase - VISA On 073119 RICHMOND HEI MO  2100616764 PANERA BREAD #60  REF # 24692169212100616764856",
+      "amount": 15.32
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-31",
+      "description": "Debit Purchase TARGET T- 25 Bre Brentwood   MO",
+      "amount": 74.76
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2025-03-31",
+      "description": "Debit Purchase - VISA On 080119 RICHMOND HEI MO  4083303633 PANERA BREAD #60  REF # 24231689214083303633118",
+      "amount": 19.89
+    }
+  ]
+}

@@ -1,0 +1,804 @@
+{
+  "accountNumber": "null",
+  "accountHolderName": "DEBORAH D GREENE",
+  "statementDate": "2016-03-14",
+  "startDate": "null",
+  "endDate": "null",
+  "beginningBalance": 0,
+  "endingBalance": 7130.67,
+  "totalDeposits": 13472.80,
+  "totalWithdrawals": 17521.28,
+  "totalATMWithdrawals": 0,
+  "totalChecks": 17521.28,
+  "totalFees": 0,
+  "transactions": [
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "...0084",
+      "amount": 50.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "...0092",
+      "amount": 50.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "...0106",
+      "amount": 50.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "PARK CITY RESOR     PARK CITY      UT",
+      "amount": 10.61
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "ITUNES.COM/BILL       866-712-7753",
+      "amount": 15.41
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "LAFAYETTE LAFAYETTE      LA",
+      "amount": 40.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "WINN-DIXIE   #1555         LAFAYETTE",
+      "amount": 284.83
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "DONUT               LAFAYETTE      LA",
+      "amount": 9.02
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "1480    63514806     LAFAYETTE      LA",
+      "amount": 14.16
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "AT&T*BILL PAYMENT",
+      "amount": 366.23
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "FOODS 629          CARENCRO       LA",
+      "amount": 80.44
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "BALDWIN EMC",
+      "amount": 116.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "ACH PMT",
+      "amount": 3500.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "AUTO PAY",
+      "amount": 1023.49
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "CAPITALONE",
+      "amount": 1000.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "Policy Pmt",
+      "amount": 196.71
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "PURCH/PACS",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "CAPITALONE",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "CAPITALONE",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "CAPITALONE",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "PURCH/PACS",
+      "amount": 50.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-16",
+      "description": "PREM OR LN",
+      "amount": 48.35
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-16",
+      "description": "CONTINUED FOR PERIOD  FEBRUARY 13, 2016",
+      "amount": 150.00,
+      "checkNumber": "2016"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-16",
+      "description": "Check",
+      "amount": 50.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "DRIVE IN #1834       CARENCRO",
+      "amount": 8.07
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "ITUNES.COM/BILL       866-712-7753",
+      "amount": 15.42
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "WALGREENS #12428",
+      "amount": 38.14
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "ABC*ANYTIME FITNESS",
+      "amount": 40.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "038502 021716 OFFICE DEPOT 00",
+      "amount": 25.89
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "PHONE PYMT",
+      "amount": 500.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "PHONE PYMT",
+      "amount": 299.27
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-17",
+      "description": "ONLINE PMT",
+      "amount": 239.84
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-17",
+      "description": "Check",
+      "amount": 250.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-17",
+      "description": "Check",
+      "amount": 103.86
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-18",
+      "description": "CHICK-FIL-A #02327         LAFAYETTE",
+      "amount": 15.05
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-18",
+      "description": "WALGREENS #12428",
+      "amount": 12.01
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-18",
+      "description": "FENCE - LAFAYETTE     LAFAYETTE",
+      "amount": 82.02
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-18",
+      "description": "PAYMT",
+      "amount": 150.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-19",
+      "description": "CANE'S #53         LAFAYETTE      LA",
+      "amount": 18.93
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-19",
+      "description": "#0082 LAFAYETTE      LA",
+      "amount": 17.26
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-19",
+      "description": "MKT-085 LFYT         LAFAYETTE      LA",
+      "amount": 19.40
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-19",
+      "description": "00003475     LAFAYETTE      LA",
+      "amount": 43.19
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-19",
+      "description": "Check",
+      "amount": 8.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-19",
+      "description": "Check",
+      "amount": 7.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-22",
+      "description": "EXPRESS              LAFAYETTE      LA",
+      "amount": 11.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-22",
+      "description": "92055887          LAFAYETTE      LA",
+      "amount": 47.14
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-22",
+      "description": "CHAMPAGNE'S AT OIL C",
+      "amount": 176.03
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-22",
+      "description": "Policy Pmt",
+      "amount": 97.83
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-22",
+      "description": "Check",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-23",
+      "description": "SAMS EPAY",
+      "amount": 105.22
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-23",
+      "description": "Check",
+      "amount": 100.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-23",
+      "description": "Check",
+      "amount": 75.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-23",
+      "description": "Check",
+      "amount": 24.99
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-02-23",
+      "description": "Check",
+      "amount": 23.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-24",
+      "description": "ITUNES.COM/BILL       866-712-7753",
+      "amount": 16.18
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-02-26",
+      "description": "PAYROLL",
+      "amount": 2283.62
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-26",
+      "description": "ANYTIME FITNESS LAFAYE",
+      "amount": 59.48
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "CHEVRON 0208565 LAFAYETTE",
+      "amount": 52.92
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "CRAWFISH TIME LAFAYETTE",
+      "amount": 89.50
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "WALGREENS #5747 LAFAYETTE",
+      "amount": 74.90
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "LIVING ESSENTL O     800-371-3515",
+      "amount": 125.41
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "WINN-DIXIE   #1555         LAFAYETTE",
+      "amount": 259.43
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-02-29",
+      "description": "AUTO PAY",
+      "amount": 1023.49
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-01",
+      "description": "Deposit",
+      "amount": 212.79
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-01",
+      "description": "Deposit",
+      "amount": 128.30
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-01",
+      "description": "Deposit",
+      "amount": 114.22
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-01",
+      "description": "SOLEIL CAFE, LLC      NEW IBERIA     LA",
+      "amount": 12.77
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-01",
+      "description": "CONTINUED FOR PERIOD  FEBRUARY 13, 2016",
+      "amount": 105.00,
+      "checkNumber": "2016"
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-01",
+      "description": "Check",
+      "amount": 100.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-01",
+      "description": "Check",
+      "amount": 80.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-02",
+      "description": "BOUTIQUE           NEW IBERIA     LA",
+      "amount": 71.07
+    },
+    {
+      "type": "DEBIT_CARD",
+      "transactionDate": "2016-03-02",
+      "description": "PURCHASE                   0000007491",
+      "amount": 11.55
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-03",
+      "description": "CHICK-FIL-A #02327         LAFAYETTE",
+      "amount": 10.49
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-03",
+      "description": "RUSSELL'S FOOD CENTE",
+      "amount": 59.50
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-03",
+      "description": "INS PREM",
+      "amount": 348.16
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-04",
+      "description": "MAXWELLS MARKET",
+      "amount": 20.52
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-04",
+      "description": "CVS/PHARMACY #05443",
+      "amount": 28.61
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-04",
+      "description": "LAFAYETTE      LA",
+      "amount": 48.60
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-04",
+      "description": "ONLINE PMT",
+      "amount": 369.19
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "Ge 435084 030416 TARGET T- 984",
+      "amount": 78.51
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "#34 BAYTOWN        TX",
+      "amount": 47.91
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "CVS/PHARMACY #07291        KATY",
+      "amount": 5.99
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "HOUSTON MEMORIA     HOUSTON",
+      "amount": 14.10
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "HOUSTON MEMORIA     HOUSTON",
+      "amount": 15.45
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "RESTAURANT             HOUSTON",
+      "amount": 163.56
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "Digital Svcs        866-216-1072   WA",
+      "amount": 8.99
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "HOUSTON MEMORIA     HOUSTON",
+      "amount": 18.43
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "CHEVRON 0305429            HOUSTON",
+      "amount": 18.62
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-07",
+      "description": "SUBWAY/ZEUS CAFE           CARENCRO",
+      "amount": 21.78
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-07",
+      "description": "Check",
+      "amount": 100.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-07",
+      "description": "Check",
+      "amount": 70.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-08",
+      "description": "8080590106",
+      "amount": 100.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-08",
+      "description": "PREJEANS                   LAFAYETTE",
+      "amount": 16.03
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-08",
+      "description": "FIREHOUSE SUBS #11         LAFAYETTE",
+      "amount": 19.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-08",
+      "description": "DOLLAR #8237        LAFAYETTE      LA",
+      "amount": 24.34
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-08",
+      "description": "Check",
+      "amount": 168.74
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-08",
+      "description": "Check",
+      "amount": 75.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-09",
+      "description": "Credit",
+      "amount": 300.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-09",
+      "description": "LOWES #00618* LAFAYETTE",
+      "amount": 26.97
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-09",
+      "description": "DOMINO'S 3027",
+      "amount": 53.16
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-09",
+      "description": "Check",
+      "amount": 20.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-09",
+      "description": "Check",
+      "amount": 20.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-10",
+      "description": "...0106",
+      "amount": 150.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "BULLRITOS 25, LLC          LAFAYETTE",
+      "amount": 39.09
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "OIL 445352201QPS     LAFAYETTE",
+      "amount": 60.83
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "NETFLIX.COM                NETFLIX.COM",
+      "amount": 7.99
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "FOODS 629          CARENCRO       LA",
+      "amount": 10.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "MARKET # 10         MORGAN CITY",
+      "amount": 12.73
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-10",
+      "description": "WILD WINGS 367     LAFAYETTE      LA",
+      "amount": 91.45
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-11",
+      "description": "PAYROLL",
+      "amount": 7863.37
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-11",
+      "description": "PAYROLL",
+      "amount": 2293.53
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-11",
+      "description": "Check",
+      "amount": 300.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "WALGREENS #5747            LAFAYETTE",
+      "amount": 19.17
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "CVS/PHARMACY #05511",
+      "amount": 7.33
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "EXPRESS              LAFAYETTE      LA",
+      "amount": 9.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "ITUNES.COM/BILL       866-712-7753",
+      "amount": 15.11
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "ABC*ANYTIME FITNESS",
+      "amount": 40.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-11",
+      "description": "ANYTIME FITNESS LAFAYE",
+      "amount": 59.48
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-11",
+      "description": "Check",
+      "amount": 150.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "CVS/PHARMACY #05511",
+      "amount": 15.65
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "************12788     LAFAYETTE",
+      "amount": 21.20
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "000446 031216 LOWE'S #618",
+      "amount": 75.47
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "CHEVRON 0304519            LAFAYETTE",
+      "amount": 10.00
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "DOMINO'S 3027",
+      "amount": 42.08
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "WINN-DIXIE   #1555         LAFAYETTE",
+      "amount": 179.02
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "SPECIALITY MEATS     CARENCRO",
+      "amount": 48.87
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "#00618*              LAFAYETTE      LA",
+      "amount": 98.13
+    },
+    {
+      "type": "WITHDRAWAL",
+      "transactionDate": "2016-03-14",
+      "description": "AUTO PAY",
+      "amount": 1023.49
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-14",
+      "description": "Check",
+      "amount": 1000.00
+    },
+    {
+      "type": "CHECK",
+      "transactionDate": "2016-03-14",
+      "description": "Check",
+      "amount": 100.00
+    },
+    {
+      "type": "DEPOSIT",
+      "transactionDate": "2016-03-14",
+      "description": "CONTINUED FOR PERIOD  FEBRUARY 13, 2016",
+      "amount": 0.14
+    }
+  ]
+}
