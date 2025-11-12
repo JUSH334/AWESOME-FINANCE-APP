@@ -1,7 +1,12 @@
 {
     "configurations": [
-        
-
+        {
+            "type": "java",
+            "name": "BackendApplication",
+            "request": "launch",
+            "mainClass": "backend.BackendApplication",
+            "projectName": "awesome-app"
+        },
         {
             "type": "java",
             "name": "BackendApplication",
