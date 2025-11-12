@@ -1,5 +1,5 @@
 ﻿﻿import { NavLink, Link } from "react-router-dom";
-import { LayoutDashboard, Wallet, PiggyBank, User, Settings, Brain } from "lucide-react";
+import { LayoutDashboard, Wallet, PiggyBank, User, Brain } from "lucide-react";
 
 export default function Sidebar() {
   return (
@@ -89,17 +89,6 @@ export default function Sidebar() {
           Profile
         </NavLink>
 
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `flex items-center gap-2 px-3 py-2 rounded-xl font-medium ${
-              isActive ? "bg-green-600 text-white" : "text-slate-700 hover:bg-slate-100"
-            }`
-          }
-        >
-          <Settings className="w-4 h-4" />
-          Settings
-        </NavLink>
       </nav>
 
       <p className="text-xs text-slate-400 mt-4">v1.0 • Demo</p>

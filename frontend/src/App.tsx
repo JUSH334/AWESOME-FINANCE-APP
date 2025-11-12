@@ -14,7 +14,6 @@ import DashboardPage from "./pages/Dashboard";
 import AccountsPage from "./pages/Accounts";
 import BudgetsPage from "./pages/Budgets";
 import ProfilePage from "./pages/Profile";
-import SettingsPage from "./pages/Settings";
 import AIInsightsPage from "./pages/AIInsights";
 import NotFound from "./pages/NotFound";
 
@@ -59,7 +58,6 @@ export default function App() {
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/ai-insights" element={<AIInsightsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 
