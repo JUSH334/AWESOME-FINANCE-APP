@@ -1,4 +1,4 @@
-﻿// Save as: frontend/src/App.tsx
+﻿// frontend/src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "./stores/auth";
@@ -15,6 +15,7 @@ import AccountsPage from "./pages/Accounts";
 import BudgetsPage from "./pages/Budgets";
 import ProfilePage from "./pages/Profile";
 import AIInsightsPage from "./pages/AIInsights";
+import AddDataPage from "./pages/AddData";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -22,11 +23,9 @@ export default function App() {
   const [isHydrating, setIsHydrating] = useState(true);
 
   useEffect(() => {
-    // Wait for hydration to complete
     hydrate().finally(() => setIsHydrating(false));
   }, [hydrate]);
 
-  // Show loading state while hydrating
   if (isHydrating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -41,7 +40,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -49,7 +47,6 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/change-username" element={<ChangeUsernamePage />} />
 
-        {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/dashboard" />} />
@@ -57,11 +54,11 @@ export default function App() {
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/ai-insights" element={<AIInsightsPage />} />
+            <Route path="/add-data" element={<AddDataPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
 
-        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

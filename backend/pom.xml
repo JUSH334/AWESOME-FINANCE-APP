@@ -76,6 +76,13 @@
             <scope>runtime</scope>
         </dependency>
         
+        <!-- PDF Parsing - Apache PDFBox -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        
         <!-- Spring Boot Starter Test (optional but recommended) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

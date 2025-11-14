@@ -1,4 +1,4 @@
-﻿import { demoDashboard, demoAccounts, demoTxns } from "../data/demo";
+﻿// frontend/src/services/api.ts
 import type { DashboardData, Account, Txn, User } from "../types";
 
 const API_BASE_URL = "http://localhost:8080/api";
@@ -30,10 +30,10 @@ interface AuthApiResponse {
   username: string;
   success: boolean;
   message: string;
-  token?: string; // JWT token
+  token?: string;
 }
 
-// AI Types (same as before)
+// AI Types
 export interface AIAccount {
   id: string;
   type: string;
@@ -235,7 +235,7 @@ export const api = {
     tokenManager.removeToken();
   },
 
-   async getCurrentUser(): Promise<User | null> {
+  async getCurrentUser(): Promise<User | null> {
     const token = tokenManager.getToken();
     if (!token) return null;
 
@@ -254,19 +254,207 @@ export const api = {
     }
   },
 
+  // ========== DATA METHODS - REAL DATA FROM DATABASE ==========
 
-  // ========== DATA METHODS WITH JWT ==========
+  calculateNetWorthHistory(transactions: any[]): any[] {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // Group transactions by month
+    const monthlyData: { [key: string]: number } = {};
+    
+    transactions
+      .filter((t: any) => new Date(t.transactionDate || t.date) >= sixMonthsAgo)
+      .forEach((t: any) => {
+        const date = new Date(t.transactionDate || t.date);
+        const monthKey = `${months[date.getMonth()]}`;
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = 0;
+        }
+        
+        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+        
+        if (t.type === 'in') {
+          monthlyData[monthKey] += amount;
+        } else {
+          monthlyData[monthKey] -= amount;
+        }
+      });
+
+    // Calculate cumulative values
+    let cumulative = 0;
+    const result = [];
+    const currentMonth = new Date().getMonth();
+    
+    for (let i = 0; i < 6; i++) {
+      const monthIndex = (currentMonth - 5 + i + 12) % 12;
+      const monthName = months[monthIndex];
+      cumulative += monthlyData[monthName] || 0;
+      result.push({
+        month: monthName,
+        value: Math.max(0, cumulative)
+      });
+    }
+
+    return result;
+  },
+
+  calculateBudgetBreakdown(transactions: any[], income: number): any[] {
+    const expenses = transactions
+      .filter((t: any) => t.type === 'out')
+      .reduce((sum: number, t: any) => {
+        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+        return sum + amount;
+      }, 0);
+    
+    const savings = income - expenses;
+    const leftToBudget = Math.max(0, income * 0.2 - savings); // Assume 20% savings goal
+
+    return [
+      { name: 'Savings', value: Math.max(0, savings) },
+      { name: 'Expenses', value: expenses },
+      { name: 'Left to Budget', value: leftToBudget }
+    ];
+  },
 
   async getDashboard(): Promise<DashboardData> {
-    return demoDashboard;
+    try {
+      // Import dataApi to avoid circular dependency
+      const { dataApi } = await import('./dataApi');
+      
+      const [accounts, transactions] = await Promise.all([
+        dataApi.getAccounts(),
+        dataApi.getTransactions()
+      ]);
+
+      // Calculate summary from real data
+      const total = accounts.reduce((sum: number, acc: any) => {
+        const balance = typeof acc.balance === 'string' ? parseFloat(acc.balance) : acc.balance;
+        return sum + (balance || 0);
+      }, 0);
+      
+      // Calculate income and expenses from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentTransactions = transactions.filter((t: any) => {
+        const txnDate = new Date(t.transactionDate || t.date);
+        return txnDate >= thirtyDaysAgo;
+      });
+      
+      const income = recentTransactions
+        .filter((t: any) => t.type === 'in')
+        .reduce((sum: number, t: any) => {
+          const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+          return sum + (amount || 0);
+        }, 0);
+      
+      const expenses = recentTransactions
+        .filter((t: any) => t.type === 'out')
+        .reduce((sum: number, t: any) => {
+          const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+          return sum + (amount || 0);
+        }, 0);
+
+      // Calculate net worth over last 6 months
+      const netWorth = this.calculateNetWorthHistory(transactions);
+      
+      // Calculate budget breakdown
+      const budget = this.calculateBudgetBreakdown(recentTransactions, income);
+
+      return {
+        summary: {
+          total,
+          income,
+          expenses,
+          savingsGoal: 12000, // You can make this user-configurable later
+          goalProgress: Math.min(total / 12000, 1)
+        },
+        netWorth,
+        budget
+      };
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      // Return empty data structure on error
+      return {
+        summary: { total: 0, income: 0, expenses: 0, savingsGoal: 12000, goalProgress: 0 },
+        netWorth: [],
+        budget: []
+      };
+    }
   },
 
   async getAccounts(): Promise<Account[]> {
-    return demoAccounts;
+    try {
+      const response = await fetch(`${API_BASE_URL}/data/accounts`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+
+      const accounts = await response.json();
+      
+      // Transform backend format to frontend format
+      return accounts.map((acc: any) => ({
+        id: acc.id.toString(),
+        name: acc.name,
+        type: acc.type,
+        balance: typeof acc.balance === 'string' ? parseFloat(acc.balance) : acc.balance,
+        institution: acc.institution,
+        accountNumber: acc.accountNumber
+      }));
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      return [];
+    }
   },
 
   async getTransactions(): Promise<Txn[]> {
-    return demoTxns;
+    try {
+      const response = await fetch(`${API_BASE_URL}/data/transactions`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...tokenManager.getAuthHeader()
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const transactions = await response.json();
+      
+      // Transform backend format to frontend format
+      return transactions.map((txn: any) => {
+        // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
+        let dateStr = txn.transactionDate || txn.date || '';
+        if (dateStr.includes('T')) {
+          dateStr = dateStr.split('T')[0];
+        }
+        
+        return {
+          id: txn.id.toString(),
+          accountId: txn.accountId ? txn.accountId.toString() : '',
+          date: dateStr,
+          transactionDate: dateStr,
+          type: txn.type,
+          amount: typeof txn.amount === 'string' ? parseFloat(txn.amount) : txn.amount,
+          category: txn.category,
+          note: txn.note || '',
+          merchant: txn.merchant || ''
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return [];
+    }
   },
 
   // ========== AI METHODS WITH JWT ==========

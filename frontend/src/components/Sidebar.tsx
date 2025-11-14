@@ -1,10 +1,10 @@
-﻿﻿import { NavLink, Link } from "react-router-dom";
+﻿﻿// frontend/src/components/Sidebar.tsx
+import { NavLink, Link } from "react-router-dom";
 import { LayoutDashboard, Wallet, PiggyBank, User, Brain } from "lucide-react";
 
 export default function Sidebar() {
   return (
     <aside className="bg-white rounded-2xl shadow-sm p-4 space-y-6">
-      {/* Brand: same SVG as login page */}
       <Link to="/dashboard" className="flex items-center gap-3">
         <div className="h-10 w-10 md:h-12 md:w-12 shrink-0">
           <svg viewBox="0 0 64 64" aria-hidden="true" className="h-full w-full text-emerald-700">
@@ -27,7 +27,6 @@ export default function Sidebar() {
         </div>
       </Link>
 
-      {/* Nav */}
       <nav className="space-y-2">
         <NavLink
           to="/dashboard"
@@ -88,7 +87,6 @@ export default function Sidebar() {
           <User className="w-4 h-4" />
           Profile
         </NavLink>
-
       </nav>
 
       <p className="text-xs text-slate-400 mt-4">v1.0 • Demo</p>

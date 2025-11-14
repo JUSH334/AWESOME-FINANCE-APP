@@ -7,7 +7,47 @@
 };
 export type NetWorthPoint = { month: string; value: number };
 export type BudgetSlice = { name: string; value: number };
-export type Account = { id: string; name: string; type: "checking" | "savings" | "credit"; balance: number };
-export type Txn = { id: string; accountId: string; date: string; type: "in" | "out"; amount: number; category: string; note?: string };
-export type DashboardData = { summary: Summary; netWorth: NetWorthPoint[]; budget: BudgetSlice[] };
-export type User = { id: string; email: string; name?: string };
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  institution?: string;
+  accountNumber?: string;
+}
+
+export interface Txn {
+  id: string;
+  accountId?: string;
+  date: string;
+  transactionDate?: string; // Added to support both field names
+  type: string;
+  amount: number;
+  category: string;
+  note?: string;
+  merchant?: string;
+}
+
+export interface DashboardData {
+  summary: {
+    total: number;
+    income: number;
+    expenses: number;
+    savingsGoal: number;
+    goalProgress: number;
+  };
+  netWorth: Array<{
+    month: string;
+    value: number;
+  }>;
+  budget: Array<{
+    name: string;
+    value: number;
+  }>;
+}
