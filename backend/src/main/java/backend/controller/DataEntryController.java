@@ -208,51 +208,58 @@ public class DataEntryController {
 
     // ==================== PDF UPLOAD ENDPOINT ====================
 
-    @PostMapping("/upload-statement")
-    public ResponseEntity<?> uploadStatement(
-        @RequestParam("file") MultipartFile file,
-        @RequestParam(required = false) Long accountId,
-        Authentication auth
-    ) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            // Parse the PDF
-            ParsedStatement parsedStatement = pdfParserService.parseStatement(file);
-            
-            // Convert parsed transactions to Transaction entities
-            List<Transaction> transactions = parsedStatement.transactions.stream()
-                .map(pt -> {
-                    Transaction t = new Transaction();
-                    t.setTransactionDate(pt.date);
-                    t.setAmount(pt.amount);
-                    t.setCategory(pt.category);
-                    t.setType(pt.type);
-                    t.setNote(pt.description);
-                    t.setMerchant(pt.merchant);
-                    t.setAccountId(accountId);
-                    return t;
-                })
-                .collect(Collectors.toList());
-            
-            // Create response with parsed data
-            Map<String, Object> response = new HashMap<>();
-            response.put("accountName", parsedStatement.accountName);
-            response.put("accountNumber", parsedStatement.accountNumber);
-            response.put("openingBalance", parsedStatement.openingBalance);
-            response.put("closingBalance", parsedStatement.closingBalance);
-            response.put("statementDate", parsedStatement.statementDate);
-            response.put("transactionCount", transactions.size());
-            response.put("transactions", transactions);
-            
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to parse statement: " + e.getMessage()));
+@PostMapping("/upload-statement")
+public ResponseEntity<?> uploadStatement(
+    @RequestParam("file") MultipartFile file,
+    @RequestParam(required = false) Long accountId,
+    Authentication auth
+) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        // Parse the PDF
+        ParsedStatement parsedStatement = pdfParserService.parseStatement(file);
+        
+        // Filter out transactions with null dates and convert to Transaction entities
+        List<Transaction> validTransactions = parsedStatement.transactions.stream()
+            .filter(pt -> pt.date != null) // Only keep transactions with valid dates
+            .map(pt -> {
+                Transaction t = new Transaction();
+                t.setTransactionDate(pt.date);
+                t.setAmount(pt.amount);
+                t.setCategory(pt.category);
+                t.setType(pt.type);
+                t.setNote(pt.description);
+                t.setMerchant(pt.merchant);
+                t.setAccountId(accountId);
+                return t;
+            })
+            .collect(Collectors.toList());
+        
+        // Create response with parsed data
+        Map<String, Object> response = new HashMap<>();
+        response.put("accountName", parsedStatement.accountName);
+        response.put("accountNumber", parsedStatement.accountNumber);
+        response.put("openingBalance", parsedStatement.openingBalance);
+        response.put("closingBalance", parsedStatement.closingBalance);
+        response.put("statementDate", parsedStatement.statementDate);
+        response.put("transactionCount", validTransactions.size());
+        response.put("transactions", validTransactions);
+        
+        // Add warning if some transactions were filtered out
+        int filteredCount = parsedStatement.transactions.size() - validTransactions.size();
+        if (filteredCount > 0) {
+            response.put("warning", filteredCount + " transaction(s) had invalid dates and were excluded");
         }
+        
+        return ResponseEntity.ok(response);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", "Failed to parse statement: " + e.getMessage()));
     }
+}
 
     @PostMapping("/import-transactions")
     public ResponseEntity<?> importTransactions(

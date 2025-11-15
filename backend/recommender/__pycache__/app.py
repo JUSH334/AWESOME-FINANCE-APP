@@ -1,8 +1,4 @@
-"""
-MyFin AI Recommender Service
-Save as: ai-service/main.py
-Run with: uvicorn main:app --reload --port 8000
-"""
+
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +11,10 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
+import os
+import asyncio
+from huggingface_hub import InferenceClient
+from pathlib import Path
 
 app = FastAPI(title="MyFin AI Recommender", version="1.0.0")
 
@@ -109,6 +109,188 @@ class FinancialMLModel:
         }
 
 ml_model = FinancialMLModel()
+
+# ============= Hugging Face Integration (NEW) =============
+
+# Candidate paths to look for application.properties (adjust/add if needed)
+PROPERTIES_CANDIDATE_PATHS = [
+    Path("application.properties"),
+    Path("backend/src/main/resources/application.properties"),
+    Path("./backend/src/main/resources/application.properties"),
+    Path("/etc/myfin/application.properties"),
+]
+
+def load_properties_from_file(paths=PROPERTIES_CANDIDATE_PATHS) -> Dict[str, str]:
+    """Try a few likely locations for an application.properties file and parse key=value pairs."""
+    props = {}
+    for p in paths:
+        try:
+            if p.exists():
+                with p.open("r", encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        k, v = line.split("=", 1)
+                        props[k.strip()] = v.strip()
+                break
+        except Exception:
+            # ignore parsing errors; continue to next candidate
+            continue
+    return props
+
+# Load properties at startup
+APP_PROPERTIES = load_properties_from_file()
+
+# Look for HF key in multiple possible property names; fallback to environment
+HF_KEY = (
+    APP_PROPERTIES.get("hf.api.key")
+    or APP_PROPERTIES.get("HF_API_KEY")
+    or APP_PROPERTIES.get("huggingface.api.key")
+    or os.environ.get("HF_API_KEY")
+)
+
+# HF model choice (Model A as requested)
+HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
+
+# Initialize HF client if key exists; otherwise client remains None (graceful fallback)
+hf_client = None
+if HF_KEY:
+    try:
+        hf_client = InferenceClient(token=HF_KEY)
+        # simple test call removed; we'll call text_generation only when needed
+    except Exception as e:
+        # On failure, leave hf_client as None to preserve fallback behavior
+        print(f"[HF init error] {e}")
+        hf_client = None
+else:
+    print("[HF] No Hugging Face API key found in application.properties or HF_API_KEY env var. LLM enhancements disabled.")
+
+async def _call_llm_generate(prompt: str, max_new_tokens: int = 200, temperature: float = 0.7) -> Optional[str]:
+    """Run the HF text generation in a thread to avoid blocking the event loop.
+    Returns the generated text or None on error.
+    """
+    if hf_client is None:
+        return None
+
+    def sync_call():
+        try:
+            # Use the InferenceClient text_generation API
+            out = hf_client.text_generation(
+                model=HF_MODEL,
+                inputs=prompt,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+            )
+            # The client returns a list/dict structure; extract text robustly
+            if isinstance(out, (list, tuple)) and len(out) > 0:
+                candidate = out[0]
+                if isinstance(candidate, dict) and "generated_text" in candidate:
+                    return candidate["generated_text"]
+                elif isinstance(candidate, dict) and "generated_texts" in candidate:
+                    # Some clients use 'generated_texts' list
+                    gen = candidate["generated_texts"]
+                    if isinstance(gen, (list, tuple)) and len(gen) > 0:
+                        return gen[0]
+                elif isinstance(candidate, str):
+                    return candidate
+            elif isinstance(out, dict) and "generated_text" in out:
+                return out["generated_text"]
+            elif isinstance(out, str):
+                return out
+            # fallback: stringify
+            return str(out)
+        except Exception as e:
+            # log and return None for graceful fallback
+            print(f"[HF call error] {e}")
+            return None
+
+    return await asyncio.to_thread(sync_call)
+
+async def enhance_insight_with_llm(insight: Insight, summary: Dict) -> Insight:
+    """Return a copy of the insight with possibly improved title/message/suggestedAction using HF.
+    If HF is unavailable or fails, return the insight unchanged.
+    """
+    try:
+        prompt = f"""
+You are a professional, friendly financial coach. Given the user's financial summary and a short insight,
+rewrite the insight title and message to be clearer, concise, and actionable while preserving meaning.
+Do not change the intent, priority, or actionable flag. Return the result in the exact format:
+TITLE: <new title>
+MESSAGE: <new message>
+SUGGESTED_ACTION: <new suggested action or leave blank if none>
+
+User summary:
+{summary}
+
+Original insight:
+Title: {insight.title}
+Message: {insight.message}
+SuggestedAction: {insight.suggestedAction or ''}
+"""
+        gen = await _call_llm_generate(prompt, max_new_tokens=150, temperature=0.6)
+        if not gen:
+            return insight  # fallback
+
+        # Simple parsing: look for markers; otherwise fallback to using the whole text as message
+        new_title, new_message, new_action = None, None, None
+        try:
+            # split by lines and search for markers
+            for line in gen.splitlines():
+                line = line.strip()
+                if line.upper().startswith("TITLE:"):
+                    new_title = line.split(":", 1)[1].strip()
+                elif line.upper().startswith("MESSAGE:"):
+                    new_message = line.split(":", 1)[1].strip()
+                elif line.upper().startswith("SUGGESTED_ACTION:"):
+                    new_action = line.split(":", 1)[1].strip()
+            # If not found, try to heuristically assign
+            if not new_message:
+                # use the generated text as message
+                new_message = gen.strip()
+            if not new_title:
+                # try first sentence as title
+                first_sent = new_message.split(".")[0]
+                new_title = first_sent if len(first_sent) <= 80 else insight.title
+        except Exception:
+            # parsing fallback
+            return insight
+
+        return Insight(
+            type=insight.type,
+            category=insight.category,
+            title=new_title or insight.title,
+            message=new_message or insight.message,
+            priority=insight.priority,
+            actionable=insight.actionable,
+            suggestedAction=new_action if (new_action is not None and new_action != "") else insight.suggestedAction
+        )
+    except Exception as e:
+        print(f"[enhance_insight error] {e}")
+        return insight
+
+async def enhance_recommendation_with_llm(rec: str, summary: Dict) -> str:
+    """Improve a single recommendation string using HF; fallback to original on error."""
+    try:
+        prompt = f"""
+You are a professional financial coach. Given the user's financial summary, rewrite the following recommendation
+to be more concise, actionable, and friendly. Keep meaning intact.
+
+User summary:
+{summary}
+
+Recommendation:
+{rec}
+
+Return only the improved recommendation sentence or short paragraph (no prefixes).
+"""
+        gen = await _call_llm_generate(prompt, max_new_tokens=80, temperature=0.6)
+        if not gen:
+            return rec
+        return gen.strip()
+    except Exception as e:
+        print(f"[enhance_recommendation error] {e}")
+        return rec
 
 # ============= ANALYSIS FUNCTIONS =============
 
@@ -522,6 +704,27 @@ async def get_recommendations(data: UserFinancialData):
             'topCategory': analysis.get('top_category'),
             'spendingTrend': analysis.get('spending_trend')
         }
+
+        # --- NEW: Enhance insights & recommendations using HF LLM (non-blocking) ---
+        # We will attempt to improve top insights and recommendations concurrently.
+        try:
+            if hf_client is not None:
+                # Enhance insights concurrently
+                insight_tasks = [enhance_insight_with_llm(ins, summary) for ins in insights]
+                enhanced_insights = await asyncio.gather(*insight_tasks, return_exceptions=False)
+                # Enhance recommendations concurrently
+                rec_tasks = [enhance_recommendation_with_llm(r, summary) for r in recommendations]
+                enhanced_recs = await asyncio.gather(*rec_tasks, return_exceptions=False)
+                
+                # Use enhanced values where available (they are same types)
+                insights = enhanced_insights
+                recommendations = enhanced_recs
+            else:
+                # HF not configured; keep original insights/recs
+                pass
+        except Exception as e:
+            # On any HF error, log and continue with original outputs
+            print(f"[HF enhancement error] {e}")
         
         return RecommendationResponse(
             insights=insights,
