@@ -91,7 +91,8 @@ export default function AccountsPage() {
       const [year, month, day] = parts;
       return `${month}/${day}/${year}`;
     } catch (e) {
-      return 'Invalid Date';
+      console.error('Date parsing error:', e, 'for date:', dateStr);
+      return `${e}: Invalid Date`;
     }
   };
 
