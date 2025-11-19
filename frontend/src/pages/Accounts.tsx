@@ -73,7 +73,7 @@ export default function AccountsPage() {
       const [year, month, day] = parts;
       return `${month}/${day}/${year}`;
     } catch (e) {
-      return 'Invalid Date';
+      return `${e}: Invalid Date`;
     }
   };
 
