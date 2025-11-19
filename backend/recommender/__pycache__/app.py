@@ -113,7 +113,7 @@ ml_model = FinancialMLModel()
 # ============= OLLAMA INTEGRATION (NEW) =============
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3.2:3b"  # Change to your installed model
+OLLAMA_MODEL = "gemma:2b"  # Change to your installed model
 
 llm_client = None
 

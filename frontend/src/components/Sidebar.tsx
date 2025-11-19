@@ -22,8 +22,8 @@ export default function Sidebar() {
           </svg>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800 leading-tight">MyFin</h2>
-          <p className="text-slate-500 text-sm leading-tight">Financial Dashboard</p>
+          <h2 className="text-l font-bold text-slate-800 leading-tight">Awesome Finance</h2>
+          <p className="text-slate-500 text-sm leading-tight">Dashboard</p>
         </div>
       </Link>
 
