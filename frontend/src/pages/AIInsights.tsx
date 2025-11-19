@@ -103,6 +103,14 @@ export default function AIInsightsPage() {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   };
 
+  const formatCategory = (category: string) => {
+    // Convert snake_case to Title Case and handle special cases
+    return category
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -141,7 +149,7 @@ export default function AIInsightsPage() {
           <Brain className="w-8 h-8 text-emerald-600" />
           <div>
             <h1 className="text-2xl font-bold text-slate-900">AI Financial Insights</h1>
-            <p className="text-slate-600">Personalized recommendations powered by machine learning</p>
+            <p className="text-slate-600">Personalized recommendations powered by machine learning and LLM</p>
           </div>
         </div>
         <button
@@ -300,8 +308,8 @@ export default function AIInsightsPage() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-semibold text-slate-900">{insight.title}</h3>
-                      <span className="text-xs px-2 py-1 rounded-full bg-white/60 text-slate-600 capitalize">
-                        {insight.category}
+                      <span className="text-xs px-2 py-1 rounded-full bg-white/60 text-slate-600 capitalize whitespace-nowrap">
+                        {formatCategory(insight.category)}
                       </span>
                     </div>
                     <p className="text-sm text-slate-700 mb-2">{insight.message}</p>

@@ -1,8 +1,9 @@
-
+# backend/recommender/app.py
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pathlib import Path
 from typing import List, Optional, Dict
 import numpy as np
 from datetime import datetime, timedelta
@@ -13,34 +14,35 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 import asyncio
-from huggingface_hub import InferenceClient
-from pathlib import Path
+import httpx  # Add this import
 
 app = FastAPI(title="MyFin AI Recommender", version="1.0.0")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ============= DATA MODELS =============
+# ============= DATA MODELS (keep as is) =============
 
 class Transaction(BaseModel):
     id: str
     date: str
     amount: float
     category: str
-    type: str  # "in" or "out"
+    type: str
     accountId: Optional[str] = None
     note: Optional[str] = None
 
 class Account(BaseModel):
     id: str
-    type: str  # "checking", "savings", "credit"
+    type: str
     balance: float
     name: Optional[str] = None
 
@@ -52,11 +54,11 @@ class UserFinancialData(BaseModel):
     savingsGoal: Optional[float] = None
 
 class Insight(BaseModel):
-    type: str  # "warning", "success", "info", "tip"
+    type: str
     category: str
     title: str
     message: str
-    priority: int  # 1-5, 5 being highest
+    priority: int
     actionable: bool
     suggestedAction: Optional[str] = None
 
@@ -72,11 +74,11 @@ class Prediction(BaseModel):
 class RecommendationResponse(BaseModel):
     insights: List[Insight]
     predictions: List[Prediction]
-    overallScore: int  # Financial health score 0-100
+    overallScore: int
     recommendations: List[str]
     summary: Dict
 
-# ============= ML MODEL =============
+# ============= ML MODEL (keep as is) =============
 
 class FinancialMLModel:
     def __init__(self):
@@ -86,14 +88,12 @@ class FinancialMLModel:
         self.is_trained = False
     
     def predict_next_month(self, current_data: Dict) -> Dict:
-        """Predict next month's expenses and income"""
         avg_expenses = current_data.get('avg_expenses', 0)
         avg_income = current_data.get('avg_income', 0)
         latest_expenses = current_data.get('latest_month_expense', avg_expenses)
         
-        # Simple prediction with trend analysis
         if latest_expenses > avg_expenses * 1.2:
-            expense_pred = avg_expenses * 1.1  # Expect some regression to mean
+            expense_pred = avg_expenses * 1.1
         elif latest_expenses < avg_expenses * 0.8:
             expense_pred = avg_expenses * 0.9
         else:
@@ -110,189 +110,133 @@ class FinancialMLModel:
 
 ml_model = FinancialMLModel()
 
-# ============= Hugging Face Integration (NEW) =============
+# ============= OLLAMA INTEGRATION (NEW) =============
 
-# Candidate paths to look for application.properties (adjust/add if needed)
-PROPERTIES_CANDIDATE_PATHS = [
-    Path("application.properties"),
-    Path("backend/src/main/resources/application.properties"),
-    Path("./backend/src/main/resources/application.properties"),
-    Path("/etc/myfin/application.properties"),
-]
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "llama3.2:3b"  # Change to your installed model
 
-def load_properties_from_file(paths=PROPERTIES_CANDIDATE_PATHS) -> Dict[str, str]:
-    """Try a few likely locations for an application.properties file and parse key=value pairs."""
-    props = {}
-    for p in paths:
-        try:
-            if p.exists():
-                with p.open("r", encoding="utf-8") as fh:
-                    for line in fh:
-                        line = line.strip()
-                        if not line or line.startswith("#") or "=" not in line:
-                            continue
-                        k, v = line.split("=", 1)
-                        props[k.strip()] = v.strip()
-                break
-        except Exception:
-            # ignore parsing errors; continue to next candidate
-            continue
-    return props
+llm_client = None
 
-# Load properties at startup
-APP_PROPERTIES = load_properties_from_file()
-
-# Look for HF key in multiple possible property names; fallback to environment
-HF_KEY = (
-    APP_PROPERTIES.get("hf.api.key")
-    or APP_PROPERTIES.get("HF_API_KEY")
-    or APP_PROPERTIES.get("huggingface.api.key")
-    or os.environ.get("HF_API_KEY")
-)
-
-# HF model choice (Model A as requested)
-HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
-
-# Initialize HF client if key exists; otherwise client remains None (graceful fallback)
-hf_client = None
-if HF_KEY:
+async def check_ollama_available():
+    """Check if Ollama is running"""
     try:
-        hf_client = InferenceClient(token=HF_KEY)
-        # simple test call removed; we'll call text_generation only when needed
-    except Exception as e:
-        # On failure, leave hf_client as None to preserve fallback behavior
-        print(f"[HF init error] {e}")
-        hf_client = None
-else:
-    print("[HF] No Hugging Face API key found in application.properties or HF_API_KEY env var. LLM enhancements disabled.")
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:11434/api/tags", timeout=2.0)
+            return response.status_code == 200
+    except:
+        return False
 
-async def _call_llm_generate(prompt: str, max_new_tokens: int = 200, temperature: float = 0.7) -> Optional[str]:
-    """Run the HF text generation in a thread to avoid blocking the event loop.
-    Returns the generated text or None on error.
-    """
-    if hf_client is None:
+async def _call_llm_generate(prompt: str, max_tokens: int = 200) -> Optional[str]:
+    """Call Ollama API to generate text"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                OLLAMA_API_URL,
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "num_predict": max_tokens
+                    }
+                },
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("response", "")
+            else:
+                print(f"[Ollama error] Status {response.status_code}")
+                return None
+    except Exception as e:
+        print(f"[Ollama call error] {e}")
         return None
 
-    def sync_call():
-        try:
-            # Use the InferenceClient text_generation API
-            out = hf_client.text_generation(
-                model=HF_MODEL,
-                inputs=prompt,
-                max_new_tokens=max_new_tokens,
-                temperature=temperature,
-            )
-            # The client returns a list/dict structure; extract text robustly
-            if isinstance(out, (list, tuple)) and len(out) > 0:
-                candidate = out[0]
-                if isinstance(candidate, dict) and "generated_text" in candidate:
-                    return candidate["generated_text"]
-                elif isinstance(candidate, dict) and "generated_texts" in candidate:
-                    # Some clients use 'generated_texts' list
-                    gen = candidate["generated_texts"]
-                    if isinstance(gen, (list, tuple)) and len(gen) > 0:
-                        return gen[0]
-                elif isinstance(candidate, str):
-                    return candidate
-            elif isinstance(out, dict) and "generated_text" in out:
-                return out["generated_text"]
-            elif isinstance(out, str):
-                return out
-            # fallback: stringify
-            return str(out)
-        except Exception as e:
-            # log and return None for graceful fallback
-            print(f"[HF call error] {e}")
-            return None
-
-    return await asyncio.to_thread(sync_call)
-
 async def enhance_insight_with_llm(insight: Insight, summary: Dict) -> Insight:
-    """Return a copy of the insight with possibly improved title/message/suggestedAction using HF.
-    If HF is unavailable or fails, return the insight unchanged.
-    """
+    """Enhance insight using local LLM"""
     try:
-        prompt = f"""
-You are a professional, friendly financial coach. Given the user's financial summary and a short insight,
-rewrite the insight title and message to be clearer, concise, and actionable while preserving meaning.
-Do not change the intent, priority, or actionable flag. Return the result in the exact format:
-TITLE: <new title>
-MESSAGE: <new message>
-SUGGESTED_ACTION: <new suggested action or leave blank if none>
+        prompt = f"""You are a professional financial coach. Rewrite this insight to be clearer and more actionable.
+Keep it concise (under 100 words). Format your response EXACTLY as:
 
-User summary:
-{summary}
+TITLE: [new title]
+MESSAGE: [new message]
+ACTION: [suggested action or NONE]
 
-Original insight:
+Current insight:
 Title: {insight.title}
 Message: {insight.message}
-SuggestedAction: {insight.suggestedAction or ''}
-"""
-        gen = await _call_llm_generate(prompt, max_new_tokens=150, temperature=0.6)
+Action: {insight.suggestedAction or 'NONE'}
+
+User's financial summary:
+- Balance: ${summary.get('totalBalance', 0):.2f}
+- Monthly expenses: ${summary.get('monthlyExpenses', 0):.2f}
+- Savings rate: {summary.get('savingsRate', 0):.1f}%
+
+Rewritten insight:"""
+
+        gen = await _call_llm_generate(prompt, max_tokens=150)
         if not gen:
-            return insight  # fallback
-
-        # Simple parsing: look for markers; otherwise fallback to using the whole text as message
-        new_title, new_message, new_action = None, None, None
-        try:
-            # split by lines and search for markers
-            for line in gen.splitlines():
-                line = line.strip()
-                if line.upper().startswith("TITLE:"):
-                    new_title = line.split(":", 1)[1].strip()
-                elif line.upper().startswith("MESSAGE:"):
-                    new_message = line.split(":", 1)[1].strip()
-                elif line.upper().startswith("SUGGESTED_ACTION:"):
-                    new_action = line.split(":", 1)[1].strip()
-            # If not found, try to heuristically assign
-            if not new_message:
-                # use the generated text as message
-                new_message = gen.strip()
-            if not new_title:
-                # try first sentence as title
-                first_sent = new_message.split(".")[0]
-                new_title = first_sent if len(first_sent) <= 80 else insight.title
-        except Exception:
-            # parsing fallback
             return insight
-
+        
+        # Parse response
+        new_title = insight.title
+        new_message = insight.message
+        new_action = insight.suggestedAction
+        
+        for line in gen.strip().split('\n'):
+            line = line.strip()
+            if line.upper().startswith("TITLE:"):
+                new_title = line.split(":", 1)[1].strip()
+            elif line.upper().startswith("MESSAGE:"):
+                new_message = line.split(":", 1)[1].strip()
+            elif line.upper().startswith("ACTION:"):
+                action = line.split(":", 1)[1].strip()
+                new_action = action if action.upper() != "NONE" else insight.suggestedAction
+        
         return Insight(
             type=insight.type,
             category=insight.category,
-            title=new_title or insight.title,
-            message=new_message or insight.message,
+            title=new_title,
+            message=new_message,
             priority=insight.priority,
             actionable=insight.actionable,
-            suggestedAction=new_action if (new_action is not None and new_action != "") else insight.suggestedAction
+            suggestedAction=new_action
         )
     except Exception as e:
         print(f"[enhance_insight error] {e}")
         return insight
 
 async def enhance_recommendation_with_llm(rec: str, summary: Dict) -> str:
-    """Improve a single recommendation string using HF; fallback to original on error."""
+    """Enhance recommendation using local LLM"""
     try:
-        prompt = f"""
-You are a professional financial coach. Given the user's financial summary, rewrite the following recommendation
-to be more concise, actionable, and friendly. Keep meaning intact.
+        prompt = f"""Rewrite this financial recommendation to be more actionable and friendly. Keep it under 50 words.
 
-User summary:
-{summary}
+Original: {rec}
 
-Recommendation:
-{rec}
+User's balance: ${summary.get('totalBalance', 0):.2f}
+Monthly expenses: ${summary.get('monthlyExpenses', 0):.2f}
 
-Return only the improved recommendation sentence or short paragraph (no prefixes).
-"""
-        gen = await _call_llm_generate(prompt, max_new_tokens=80, temperature=0.6)
+Improved recommendation:"""
+
+        gen = await _call_llm_generate(prompt, max_tokens=80)
         if not gen:
             return rec
-        return gen.strip()
+        
+        # Clean up the response
+        improved = gen.strip()
+        # Remove common prefixes the model might add
+        for prefix in ["Improved recommendation:", "Here's", "Recommendation:"]:
+            if improved.startswith(prefix):
+                improved = improved[len(prefix):].strip()
+        
+        return improved if improved else rec
     except Exception as e:
         print(f"[enhance_recommendation error] {e}")
         return rec
 
-# ============= ANALYSIS FUNCTIONS =============
+# ============= ANALYSIS FUNCTIONS (keep all existing functions) =============
 
 def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
     """Analyze spending patterns and trends"""
@@ -304,14 +248,16 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
             'is_unusual_spending': False,
             'total_months': 0,
             'top_category': None,
-            'spending_trend': 'stable'
+            'spending_trend': 'stable',
+            'total_income': 0,
+            'total_expenses': 0,
+            'net_cashflow': 0
         }
     
     df = pd.DataFrame([t.dict() for t in transactions])
     df['date'] = pd.to_datetime(df['date'])
     df['month'] = df['date'].dt.to_period('M')
     
-    # Calculate by category
     expenses = df[df['type'] == 'out'].copy()
     income = df[df['type'] == 'in'].copy()
     
@@ -328,7 +274,6 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
         avg_monthly_expense = monthly.mean()
         latest_month_expense = monthly.iloc[-1] if len(monthly) > 0 else 0
         
-        # Detect unusual spending
         if len(monthly) >= 2:
             std_dev = monthly.std()
             is_unusual = abs(latest_month_expense - avg_monthly_expense) > std_dev
@@ -337,7 +282,6 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
         
         top_category = max(category_totals, key=category_totals.get) if category_totals else None
     
-    # Calculate spending trend
     spending_trend = 'stable'
     if len(monthly) >= 3:
         recent_avg = monthly.iloc[-2:].mean()
@@ -347,7 +291,6 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
         elif recent_avg < older_avg * 0.9:
             spending_trend = 'decreasing'
     
-    # Income analysis
     total_income = income['amount'].sum() if not income.empty else 0
     total_expenses = expenses['amount'].sum() if not expenses.empty else 0
     
@@ -366,32 +309,24 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
 
 def calculate_financial_health_score(data: UserFinancialData, analysis: Dict) -> int:
     """Calculate overall financial health score (0-100)"""
-    score = 40  # Base score
-    
-    # Total balance
+    score = 40
     total_balance = sum(acc.balance for acc in data.accounts)
-    
-    # Income vs Expenses ratio
     total_income = analysis.get('total_income', 0)
     total_expenses = analysis.get('total_expenses', 0)
     
-    # 1. Savings rate (up to 25 points)
     if total_income > 0:
         savings_rate = (total_income - total_expenses) / total_income
         score += min(25, savings_rate * 100 * 0.25)
     
-    # 2. Positive balance (10 points)
     if total_balance > 0:
         score += 10
     
-    # 3. Emergency fund (15 points)
     avg_monthly = analysis.get('avg_monthly_expense', 0)
     if avg_monthly > 0 and total_balance >= (avg_monthly * 3):
         score += 15
     elif avg_monthly > 0 and total_balance >= (avg_monthly * 1):
         score += 8
     
-    # 4. Spending trend (10 points)
     if analysis.get('spending_trend') == 'decreasing':
         score += 10
     elif analysis.get('spending_trend') == 'stable':
@@ -407,7 +342,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
     total_income = analysis.get('total_income', 0)
     total_expenses = analysis.get('total_expenses', 0)
     
-    # 1. Unusual spending warning
     if analysis.get('is_unusual_spending'):
         insights.append(Insight(
             type="warning",
@@ -419,7 +353,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
             suggestedAction="Review your recent transactions and identify areas where you can cut back"
         ))
     
-    # 2. Top spending category
     top_category = analysis.get('top_category')
     if top_category:
         category_totals = analysis.get('category_totals', {})
@@ -435,7 +368,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
             suggestedAction=f"Consider setting a monthly budget limit for {top_category}"
         ))
     
-    # 3. Balance warnings
     if total_balance < 0:
         insights.append(Insight(
             type="warning",
@@ -476,7 +408,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
             actionable=False
         ))
     
-    # 4. Savings goal progress
     if data.savingsGoal and data.savingsGoal > 0:
         progress = (total_balance / data.savingsGoal) * 100
         if progress >= 100:
@@ -509,7 +440,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
                 suggestedAction="Stay consistent with your savings plan to reach your goal faster"
             ))
     
-    # 5. Savings rate insights
     if total_income > 0:
         savings_rate = ((total_income - total_expenses) / total_income) * 100
         if savings_rate < 0:
@@ -542,7 +472,6 @@ def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
                 actionable=False
             ))
     
-    # 6. Spending trend
     trend = analysis.get('spending_trend')
     if trend == 'increasing':
         insights.append(Insight(
@@ -582,7 +511,6 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
     
     pred = ml_model.predict_next_month(current_data)
     
-    # Expense prediction
     current_expense = analysis.get('latest_month_expense', 0)
     predicted_expense = pred['expenses']
     expense_change = predicted_expense - current_expense
@@ -598,7 +526,6 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
         changePercent=expense_change_pct
     ))
     
-    # Income prediction
     if data.monthlyIncome:
         predictions.append(Prediction(
             metric="Next Month Income",
@@ -610,7 +537,6 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
             changePercent=0
         ))
     
-    # Balance prediction
     current_balance = sum(acc.balance for acc in data.accounts)
     predicted_balance = current_balance + pred['income'] - pred['expenses']
     balance_change = predicted_balance - current_balance
@@ -632,7 +558,6 @@ def generate_recommendations(insights: List[Insight], score: int, analysis: Dict
     """Generate actionable recommendations"""
     recs = []
     
-    # Score-based recommendations
     if score < 40:
         recs.append("🚨 Focus on financial basics: track all expenses, create a budget, and eliminate unnecessary spending")
         recs.append("💡 Consider ways to increase income through side gigs, asking for a raise, or freelancing")
@@ -646,16 +571,14 @@ def generate_recommendations(insights: List[Insight], score: int, analysis: Dict
         recs.append("🌟 Excellent financial health! Consider meeting with a financial advisor to optimize investments")
         recs.append("🎯 Set ambitious long-term goals like early retirement or major purchases")
     
-    # Add specific recommendations from high-priority insights
     for insight in insights[:3]:
         if insight.actionable and insight.suggestedAction and insight.suggestedAction not in recs:
             recs.append(f"💡 {insight.suggestedAction}")
     
-    # Spending trend recommendations
     if analysis.get('spending_trend') == 'increasing':
         recs.append("📉 Your expenses are rising. Review subscriptions, dining out, and impulse purchases")
     
-    return recs[:6]  # Limit to top 6 recommendations
+    return recs[:6]
 
 # ============= API ENDPOINTS =============
 
@@ -665,6 +588,7 @@ def root():
         "message": "MyFin AI Recommender Service 🤖",
         "version": "1.0.0",
         "status": "running",
+        "llm_available": asyncio.run(check_ollama_available()),
         "endpoints": {
             "recommendations": "/api/recommendations",
             "health": "/health",
@@ -673,29 +597,25 @@ def root():
     }
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "ai-recommender"}
+async def health_check():
+    ollama_status = await check_ollama_available()
+    return {
+        "status": "healthy",
+        "service": "ai-recommender",
+        "llm_available": ollama_status,
+        "llm_provider": "ollama" if ollama_status else "none"
+    }
 
 @app.post("/api/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(data: UserFinancialData):
     """Generate personalized financial recommendations"""
     try:
-        # Analyze spending patterns
         analysis = analyze_spending_patterns(data.transactions)
-        
-        # Generate insights
         insights = generate_insights(data, analysis)
-        
-        # Calculate financial health score
         score = calculate_financial_health_score(data, analysis)
-        
-        # Generate predictions
         predictions = generate_predictions(data, analysis)
-        
-        # Generate recommendations
         recommendations = generate_recommendations(insights, score, analysis)
         
-        # Create summary
         total_balance = sum(acc.balance for acc in data.accounts)
         summary = {
             'totalBalance': total_balance,
@@ -705,26 +625,31 @@ async def get_recommendations(data: UserFinancialData):
             'spendingTrend': analysis.get('spending_trend')
         }
 
-        # --- NEW: Enhance insights & recommendations using HF LLM (non-blocking) ---
-        # We will attempt to improve top insights and recommendations concurrently.
+        # Try to enhance with LLM if available
         try:
-            if hf_client is not None:
-                # Enhance insights concurrently
-                insight_tasks = [enhance_insight_with_llm(ins, summary) for ins in insights]
-                enhanced_insights = await asyncio.gather(*insight_tasks, return_exceptions=False)
-                # Enhance recommendations concurrently
-                rec_tasks = [enhance_recommendation_with_llm(r, summary) for r in recommendations]
-                enhanced_recs = await asyncio.gather(*rec_tasks, return_exceptions=False)
+            if await check_ollama_available():
+                print("[AI] Enhancing insights with local LLM...")
+                # Enhance top 3 insights only
+                insight_tasks = [enhance_insight_with_llm(ins, summary) for ins in insights[:3]]
+                enhanced_top_insights = await asyncio.gather(*insight_tasks, return_exceptions=True)
                 
-                # Use enhanced values where available (they are same types)
-                insights = enhanced_insights
-                recommendations = enhanced_recs
-            else:
-                # HF not configured; keep original insights/recs
-                pass
+                # Replace top insights with enhanced versions
+                for i, enhanced in enumerate(enhanced_top_insights):
+                    if isinstance(enhanced, Insight):
+                        insights[i] = enhanced
+                
+                # Enhance top 3 recommendations
+                rec_tasks = [enhance_recommendation_with_llm(r, summary) for r in recommendations[:3]]
+                enhanced_top_recs = await asyncio.gather(*rec_tasks, return_exceptions=True)
+                
+                # Replace top recommendations with enhanced versions
+                for i, enhanced in enumerate(enhanced_top_recs):
+                    if isinstance(enhanced, str):
+                        recommendations[i] = enhanced
+                
+                print("[AI] LLM enhancement complete")
         except Exception as e:
-            # On any HF error, log and continue with original outputs
-            print(f"[HF enhancement error] {e}")
+            print(f"[AI] LLM enhancement failed, using default: {e}")
         
         return RecommendationResponse(
             insights=insights,

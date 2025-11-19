@@ -1,23 +1,32 @@
-﻿import { useState } from "react";
+﻿// frontend/src/pages/Profile.tsx
+import { useState, useEffect } from "react";
 import { useAuth } from "../stores/auth";
-import { User, Lock, Mail, Bell, Shield, Palette, Globe, LogOut, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { User, Lock, Shield, Globe, LogOut, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { profileApi } from "../services/profileApi";
+import type { ProfileData } from "../services/profileApi";
 
 type TabKey = "profile" | "security" | "preferences";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Profile data from backend
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   // Profile form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
-  const [username, setUsername] = useState(user?.name || "");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
 
   // Security form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -27,17 +36,62 @@ export default function ProfilePage() {
   // Data management
   const [exportFormat, setExportFormat] = useState("csv");
 
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+
+  // Load profile data on mount
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await profileApi.getProfile();
+      setProfileData(data);
+      
+      // Populate form fields
+      setUsername(data.username || "");
+      setEmail(data.email || "");
+      setFirstName(data.firstName || "");
+      setLastName(data.lastName || "");
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to load profile' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProfileSave = async () => {
     setSaving(true);
     setMessage(null);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setMessage({ type: 'success', text: 'Profile updated successfully!' });
-    setSaving(false);
-    
-    setTimeout(() => setMessage(null), 3000);
+    try {
+      await profileApi.updateProfile({
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        email: email || undefined
+      });
+      
+      // Reload profile to get updated data
+      await loadProfile();
+      
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to update profile' 
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -54,40 +108,70 @@ export default function ProfilePage() {
     setSaving(true);
     setMessage(null);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setMessage({ type: 'success', text: 'Password changed successfully!' });
-    setSaving(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    
-    setTimeout(() => setMessage(null), 3000);
-  };
-
-  const handleDataSave = async () => {
-    setSaving(true);
-    setMessage(null);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setMessage({ type: 'success', text: 'Data preferences updated!' });
-    setSaving(false);
-    
-    setTimeout(() => setMessage(null), 3000);
+    try {
+      await profileApi.changePassword({
+        currentPassword,
+        newPassword
+      });
+      
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to change password' 
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
   };
 
   const handleExportData = async () => {
     setSaving(true);
     setMessage(null);
     
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      await profileApi.downloadExportedData(exportFormat);
+      setMessage({ type: 'success', text: 'Data exported successfully!' });
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to export data' 
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setMessage({ type: 'error', text: 'Please enter your password to confirm' });
+      return;
+    }
+
+    setSaving(true);
+    setMessage(null);
     
-    setMessage({ type: 'success', text: 'Data exported successfully!' });
-    setSaving(false);
-    
-    setTimeout(() => setMessage(null), 3000);
+    try {
+      await profileApi.deleteAccount(deletePassword);
+      setMessage({ type: 'success', text: 'Account deleted successfully. Redirecting...' });
+      
+      // Logout and redirect after short delay
+      setTimeout(() => {
+        logout();
+        navigate("/login");
+      }, 2000);
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to delete account' 
+      });
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -95,6 +179,17 @@ export default function ProfilePage() {
     { key: "security" as TabKey, label: "Security", icon: Shield },
     { key: "preferences" as TabKey, label: "Data", icon: Globe },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -105,7 +200,10 @@ export default function ProfilePage() {
           <p className="text-slate-600 text-sm">Manage your account settings and preferences</p>
         </div>
         <button
-          onClick={logout}
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 transition-colors text-sm font-medium"
         >
           <LogOut className="w-4 h-4" />
@@ -190,25 +288,27 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="john_doe"
-                  className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                  disabled
+                  className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 bg-slate-50 text-slate-500 cursor-not-allowed"
                 />
               </div>
-              <p className="text-xs text-slate-500">Your unique username for logging in</p>
+              <p className="text-xs text-slate-500">Username cannot be changed here. Use "Change Username" from login page.</p>
             </div>
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+              />
+              {profileData && !profileData.isEmailVerified && (
+                <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Email not verified
+                </p>
+              )}
             </div>
           </div>
 
@@ -320,22 +420,12 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-
-          {/* Active Sessions */}
-          <div className="rounded-2xl bg-white border border-slate-200 p-6">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Active Sessions</h3>
-              <p className="text-sm text-slate-600 mb-4">Manage your active login sessions</p>
-            </div>
-          </div>
         </div>
       )}
 
       {/* Data Tab */}
       {activeTab === "preferences" && (
         <div className="space-y-6">
-    
-
           {/* Export Data */}
           <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-6">
             <div>
@@ -353,8 +443,6 @@ export default function ProfilePage() {
                 >
                   <option value="csv">CSV (Comma Separated Values)</option>
                   <option value="json">JSON (JavaScript Object Notation)</option>
-                  <option value="xlsx">Excel (XLSX)</option>
-                  <option value="pdf">PDF Report</option>
                 </select>
               </div>
 
@@ -382,14 +470,81 @@ export default function ProfilePage() {
 
       {/* Danger Zone */}
       <div className="rounded-2xl bg-rose-50 border border-rose-200 p-6">
-        <div className="flex items-start justify-between">
+        <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold text-rose-900 mb-1">Delete Account</h3>
             <p className="text-sm text-rose-700">Permanently delete your account and all data. This action cannot be undone.</p>
           </div>
-          <button className="px-4 py-2 text-sm font-medium text-rose-700 hover:text-white hover:bg-rose-600 border border-rose-300 rounded-xl transition-colors">
-            Delete Account
-          </button>
+
+          {!showDeleteConfirm ? (
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2 text-sm font-medium text-rose-700 hover:text-white hover:bg-rose-600 border border-rose-300 rounded-xl transition-colors"
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="space-y-3 pt-2">
+              <div className="p-4 bg-rose-100 border border-rose-300 rounded-xl">
+                <p className="text-sm text-rose-900 font-medium mb-2">⚠️ Are you absolutely sure?</p>
+                <p className="text-sm text-rose-800">This will permanently delete:</p>
+                <ul className="text-sm text-rose-800 list-disc list-inside mt-1">
+                  <li>Your profile and account</li>
+                  <li>All your accounts and balances</li>
+                  <li>All your transactions</li>
+                  <li>All your financial data</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-rose-900">Enter your password to confirm</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-rose-400" />
+                  <input
+                    type={showDeletePassword ? 'text' : 'password'}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full rounded-xl border border-rose-300 pl-10 pr-12 py-2.5 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 hover:text-rose-600"
+                  >
+                    {showDeletePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={saving || !deletePassword}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Yes, Delete My Account'
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletePassword("");
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
