@@ -1,6 +1,6 @@
 // frontend/src/components/PDFUploadForm.tsx
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, AlertCircle, X, FileText, Download } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, AlertCircle, X, FileText, Download, Edit2, Save } from 'lucide-react';
 import { dataApi } from '../services/dataApi';
 
 export default function PDFUploadForm() {
@@ -12,6 +12,7 @@ export default function PDFUploadForm() {
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
   const [importing, setImporting] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function PDFUploadForm() {
       setFile(null);
       setParsedData(null);
       setSelectedTransactions(new Set());
+      setEditingTransaction(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -114,6 +116,18 @@ export default function PDFUploadForm() {
 
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  };
+
+  const updateTransaction = (idx: number, field: string, value: any) => {
+    const updatedTransactions = [...parsedData.transactions];
+    updatedTransactions[idx] = {
+      ...updatedTransactions[idx],
+      [field]: value
+    };
+    setParsedData({
+      ...parsedData,
+      transactions: updatedTransactions
+    });
   };
 
   return (
@@ -240,6 +254,15 @@ export default function PDFUploadForm() {
       {/* Parsed Data Review */}
       {parsedData && (
         <div className="space-y-6">
+          {/* Disclaimer */}
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm text-amber-800">
+              <p className="font-semibold mb-1">Important: Review Parsed Data</p>
+              <p>Please carefully review all parsed transactions before importing. Parsing may not be 100% accurate. Verify dates, amounts, descriptions, and categories to ensure they match your statement.</p>
+            </div>
+          </div>
+
           {/* Statement Info */}
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
             <h3 className="font-semibold text-slate-900 mb-3">Statement Information</h3>
@@ -296,6 +319,7 @@ export default function PDFUploadForm() {
                       <th className="text-left p-3">Category</th>
                       <th className="text-left p-3">Type</th>
                       <th className="text-right p-3">Amount</th>
+                      <th className="text-center p-3 w-20">Edit</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -309,30 +333,103 @@ export default function PDFUploadForm() {
                             className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                           />
                         </td>
-                        <td className="p-3 text-slate-900">
-                          {new Date(transaction.transactionDate).toLocaleDateString()}
-                        </td>
-                        <td className="p-3 text-slate-900 max-w-xs truncate">
-                          {transaction.note || transaction.merchant || 'N/A'}
+                        <td className="p-3">
+                          {editingTransaction === idx ? (
+                            <input
+                              type="date"
+                              value={transaction.transactionDate.split('T')[0]}
+                              onChange={(e) => updateTransaction(idx, 'transactionDate', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                            />
+                          ) : (
+                            <span className="text-slate-900">
+                              {new Date(transaction.transactionDate).toLocaleDateString()}
+                            </span>
+                          )}
                         </td>
                         <td className="p-3">
-                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {transaction.category}
-                          </span>
+                          {editingTransaction === idx ? (
+                            <input
+                              type="text"
+                              value={transaction.note || transaction.merchant || ''}
+                              onChange={(e) => updateTransaction(idx, transaction.note !== undefined ? 'note' : 'merchant', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                              placeholder="Description"
+                            />
+                          ) : (
+                            <span className="text-slate-900 max-w-xs truncate block">
+                              {transaction.note || transaction.merchant || 'N/A'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-3">
-                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                            transaction.type === 'in'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-rose-100 text-rose-800'
-                          }`}>
-                            {transaction.type === 'in' ? 'Income' : 'Expense'}
-                          </span>
+                          {editingTransaction === idx ? (
+                            <input
+                              type="text"
+                              value={transaction.category}
+                              onChange={(e) => updateTransaction(idx, 'category', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                              placeholder="Category"
+                            />
+                          ) : (
+                            <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {transaction.category}
+                            </span>
+                          )}
                         </td>
-                        <td className={`p-3 text-right font-medium ${
-                          transaction.type === 'in' ? 'text-emerald-600' : 'text-rose-600'
-                        }`}>
-                          {transaction.type === 'in' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                        <td className="p-3">
+                          {editingTransaction === idx ? (
+                            <select
+                              value={transaction.type}
+                              onChange={(e) => updateTransaction(idx, 'type', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                            >
+                              <option value="in">Income</option>
+                              <option value="out">Expense</option>
+                            </select>
+                          ) : (
+                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                              transaction.type === 'in'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {transaction.type === 'in' ? 'Income' : 'Expense'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          {editingTransaction === idx ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={transaction.amount}
+                              onChange={(e) => updateTransaction(idx, 'amount', parseFloat(e.target.value))}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-right"
+                            />
+                          ) : (
+                            <span className={`font-medium ${
+                              transaction.type === 'in' ? 'text-emerald-600' : 'text-rose-600'
+                            }`}>
+                              {transaction.type === 'in' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => setEditingTransaction(editingTransaction === idx ? null : idx)}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              editingTransaction === idx
+                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                            }`}
+                            title={editingTransaction === idx ? 'Save' : 'Edit'}
+                          >
+                            {editingTransaction === idx ? (
+                              <Save className="w-4 h-4" />
+                            ) : (
+                              <Edit2 className="w-4 h-4" />
+                            )}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -366,6 +463,7 @@ export default function PDFUploadForm() {
               onClick={() => {
                 setParsedData(null);
                 setSelectedTransactions(new Set());
+                setEditingTransaction(null);
                 setFile(null);
                 if (fileInputRef.current) {
                   fileInputRef.current.value = '';
