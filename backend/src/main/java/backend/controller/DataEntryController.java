@@ -7,7 +7,7 @@ import backend.service.AccountService;
 import backend.service.TransactionService;
 import backend.service.PDFParserService;
 import backend.service.PDFParserService.ParsedStatement;
-import backend.service.PDFParserService.ParsedTransaction;
+import backend.service.AIInsightsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +34,9 @@ public class DataEntryController {
     @Autowired
     private PDFParserService pdfParserService;
 
+    @Autowired
+    private AIInsightsService aiInsightsService;
+
     // ==================== ACCOUNT ENDPOINTS ====================
 
     @GetMapping("/accounts")
@@ -48,68 +51,80 @@ public class DataEntryController {
         }
     }
 
-    @PostMapping("/accounts")
-    public ResponseEntity<?> createAccount(@RequestBody AccountRequest request, Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            Account account = accountService.createAccount(
-                userId,
-                request.name,
-                request.type,
-                request.balance,
-                request.institution,
-                request.accountNumber
-            );
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(account);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+@PostMapping("/accounts")
+public ResponseEntity<?> createAccount(@RequestBody AccountRequest request, Authentication auth) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        Account account = accountService.createAccount(
+            userId,
+            request.name,
+            request.type,
+            request.balance,
+            request.institution,
+            request.accountNumber
+        );
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(account);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
-    @PutMapping("/accounts/{id}")
-    public ResponseEntity<?> updateAccount(
-        @PathVariable Long id,
-        @RequestBody AccountRequest request,
-        Authentication auth
-    ) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            Account account = accountService.updateAccount(
-                id,
-                userId,
-                request.name,
-                request.type,
-                request.balance,
-                request.institution,
-                request.accountNumber
-            );
-            
-            return ResponseEntity.ok(account);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+// In updateAccount method, add after successful update:
+@PutMapping("/accounts/{id}")
+public ResponseEntity<?> updateAccount(
+    @PathVariable Long id,
+    @RequestBody AccountRequest request,
+    Authentication auth
+) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        Account account = accountService.updateAccount(
+            id,
+            userId,
+            request.name,
+            request.type,
+            request.balance,
+            request.institution,
+            request.accountNumber
+        );
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.ok(account);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
-    @DeleteMapping("/accounts/{id}")
-    public ResponseEntity<?> deleteAccount(@PathVariable Long id, Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            accountService.deleteAccount(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+// In deleteAccount method, add after successful deletion:
+@DeleteMapping("/accounts/{id}")
+public ResponseEntity<?> deleteAccount(@PathVariable Long id, Authentication auth) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        accountService.deleteAccount(id, userId);
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
     // ==================== TRANSACTION ENDPOINTS ====================
 
@@ -138,73 +153,85 @@ public class DataEntryController {
         }
     }
 
-    @PostMapping("/transactions")
-    public ResponseEntity<?> createTransaction(@RequestBody TransactionRequest request, Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            Transaction transaction = transactionService.createTransaction(
-                userId,
-                request.accountId,
-                request.transactionDate,
-                request.amount,
-                request.category,
-                request.type,
-                request.note,
-                request.merchant,
-                request.updateBalance != null ? request.updateBalance : true
-            );
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(transaction);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+@PostMapping("/transactions")
+public ResponseEntity<?> createTransaction(@RequestBody TransactionRequest request, Authentication auth) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        Transaction transaction = transactionService.createTransaction(
+            userId,
+            request.accountId,
+            request.transactionDate,
+            request.amount,
+            request.category,
+            request.type,
+            request.note,
+            request.merchant,
+            request.updateBalance != null ? request.updateBalance : true
+        );
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(transaction);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
-    @PutMapping("/transactions/{id}")
-    public ResponseEntity<?> updateTransaction(
-        @PathVariable Long id,
-        @RequestBody TransactionRequest request,
-        Authentication auth
-    ) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            Transaction transaction = transactionService.updateTransaction(
-                id,
-                userId,
-                request.accountId,
-                request.transactionDate,
-                request.amount,
-                request.category,
-                request.type,
-                request.note,
-                request.merchant
-            );
-            
-            return ResponseEntity.ok(transaction);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+// In updateTransaction method, add after successful update:
+@PutMapping("/transactions/{id}")
+public ResponseEntity<?> updateTransaction(
+    @PathVariable Long id,
+    @RequestBody TransactionRequest request,
+    Authentication auth
+) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        Transaction transaction = transactionService.updateTransaction(
+            id,
+            userId,
+            request.accountId,
+            request.transactionDate,
+            request.amount,
+            request.category,
+            request.type,
+            request.note,
+            request.merchant
+        );
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.ok(transaction);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
-    @DeleteMapping("/transactions/{id}")
-    public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            transactionService.deleteTransaction(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Transaction deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+// In deleteTransaction method, add after successful deletion:
+@DeleteMapping("/transactions/{id}")
+public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Authentication auth) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        transactionService.deleteTransaction(id, userId);
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.ok(Map.of("message", "Transaction deleted successfully"));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
     // ==================== PDF UPLOAD ENDPOINT ====================
 
@@ -261,30 +288,33 @@ public ResponseEntity<?> uploadStatement(
     }
 }
 
-    @PostMapping("/import-transactions")
-    public ResponseEntity<?> importTransactions(
-        @RequestBody ImportRequest request,
-        Authentication auth
-    ) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            
-            List<Transaction> saved = transactionService.createBulkTransactions(
-                userId,
-                request.transactions,
-                request.updateBalance != null ? request.updateBalance : true
-            );
-            
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "message", "Transactions imported successfully",
-                "count", saved.size(),
-                "transactions", saved
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
+@PostMapping("/import-transactions")
+public ResponseEntity<?> importTransactions(
+    @RequestBody ImportRequest request,
+    Authentication auth
+) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        List<Transaction> saved = transactionService.createBulkTransactions(
+            userId,
+            request.transactions,
+            request.updateBalance != null ? request.updateBalance : true
+        );
+        
+        // TRIGGER AI INSIGHT GENERATION
+        aiInsightsService.triggerInsightGeneration(userId);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            "message", "Transactions imported successfully",
+            "count", saved.size(),
+            "transactions", saved
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
 
     // ==================== HELPER METHODS ====================
 

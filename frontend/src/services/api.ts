@@ -547,4 +547,75 @@ export const api = {
       throw error;
     }
   },
+
+  // ========== STORED AI INSIGHTS METHODS ==========
+
+async getStoredAIInsights(): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-insights/latest`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...tokenManager.getAuthHeader()
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || 
+        'Failed to fetch stored insights'
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Cannot connect to backend server. Make sure it is running on port 8080.');
+    }
+    throw error;
+  }
+},
+
+async triggerAIInsightGeneration(): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-insights/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...tokenManager.getAuthHeader()
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || 
+        'Failed to trigger insight generation'
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+},
+
+async getAIInsightStatus(): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-insights/status`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...tokenManager.getAuthHeader()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get insight status');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+},
 };
