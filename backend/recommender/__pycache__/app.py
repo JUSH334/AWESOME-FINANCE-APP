@@ -1,4 +1,4 @@
-# backend/recommender/app.py
+# backend/recommender/app.py - OPTIMIZED VERSION
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +14,10 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 import asyncio
-import httpx  # Add this import
+import httpx
+from functools import lru_cache
+import hashlib
+import json
 
 app = FastAPI(title="MyFin AI Recommender", version="1.0.0")
 
@@ -29,7 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============= DATA MODELS (keep as is) =============
+# ============= CONFIGURATION =============
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "gemma:2b"  # Use smaller model for speed
+LLM_TIMEOUT = 15.0  # Reduced timeout
+MAX_TOKENS = 100  # Reduced token count for faster responses
+CACHE_SIZE = 128  # Cache size for LLM responses
+
+# ============= DATA MODELS =============
 
 class Transaction(BaseModel):
     id: str
@@ -78,7 +88,7 @@ class RecommendationResponse(BaseModel):
     recommendations: List[str]
     summary: Dict
 
-# ============= ML MODEL (keep as is) =============
+# ============= ML MODEL =============
 
 class FinancialMLModel:
     def __init__(self):
@@ -110,14 +120,17 @@ class FinancialMLModel:
 
 ml_model = FinancialMLModel()
 
-# ============= OLLAMA INTEGRATION (NEW) =============
+# ============= OPTIMIZED OLLAMA INTEGRATION =============
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma:2b"  # Change to your installed model
+# In-memory cache for LLM responses
+llm_cache = {}
 
-llm_client = None
+def get_cache_key(prompt: str, max_tokens: int) -> str:
+    """Generate cache key for prompt"""
+    content = f"{prompt}:{max_tokens}"
+    return hashlib.md5(content.encode()).hexdigest()
 
-async def check_ollama_available():
+async def check_ollama_available() -> bool:
     """Check if Ollama is running"""
     try:
         async with httpx.AsyncClient() as client:
@@ -126,8 +139,25 @@ async def check_ollama_available():
     except:
         return False
 
-async def _call_llm_generate(prompt: str, max_tokens: int = 200) -> Optional[str]:
-    """Call Ollama API to generate text"""
+@lru_cache(maxsize=CACHE_SIZE)
+def _cached_llm_call(cache_key: str, prompt: str, max_tokens: int) -> Optional[str]:
+    """Synchronous cached LLM call - not directly used but helps with caching logic"""
+    return None
+
+async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optional[str]:
+    """
+    Optimized Ollama API call with:
+    - Caching
+    - Reduced token count
+    - Shorter timeout
+    - Temperature optimization
+    """
+    # Check cache first
+    cache_key = get_cache_key(prompt, max_tokens)
+    if cache_key in llm_cache:
+        print(f"[LLM Cache HIT] {cache_key[:8]}...")
+        return llm_cache[cache_key]
+    
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -137,60 +167,73 @@ async def _call_llm_generate(prompt: str, max_tokens: int = 200) -> Optional[str
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.7,
-                        "num_predict": max_tokens
+                        "temperature": 0.5,  # Lower for more consistent/faster
+                        "num_predict": max_tokens,
+                        "top_k": 20,  # Reduce for speed
+                        "top_p": 0.8,  # Reduce for speed
+                        "num_ctx": 1024,  # Smaller context window
                     }
                 },
-                timeout=30.0
+                timeout=LLM_TIMEOUT
             )
             
             if response.status_code == 200:
                 result = response.json()
-                return result.get("response", "")
+                generated_text = result.get("response", "")
+                
+                # Cache the result
+                if len(llm_cache) >= CACHE_SIZE:
+                    # Remove oldest entry
+                    llm_cache.pop(next(iter(llm_cache)))
+                llm_cache[cache_key] = generated_text
+                
+                print(f"[LLM Cache MISS] Generated {len(generated_text)} chars")
+                return generated_text
             else:
                 print(f"[Ollama error] Status {response.status_code}")
                 return None
+    except asyncio.TimeoutError:
+        print(f"[Ollama timeout] Request took longer than {LLM_TIMEOUT}s")
+        return None
     except Exception as e:
         print(f"[Ollama call error] {e}")
         return None
 
 async def enhance_insight_with_llm(insight: Insight, summary: Dict) -> Insight:
-    """Enhance insight using local LLM"""
+    """
+    Enhanced insight with optimized prompts and parallel processing
+    """
     try:
-        prompt = f"""You are a professional financial coach. Rewrite this insight to be clearer and more actionable.
-Keep it concise (under 100 words). Format your response EXACTLY as:
+        # Shorter, more direct prompt
+        prompt = f"""Rewrite this financial insight concisely (under 80 words).
 
-TITLE: [new title]
-MESSAGE: [new message]
-ACTION: [suggested action or NONE]
-
-Current insight:
 Title: {insight.title}
 Message: {insight.message}
-Action: {insight.suggestedAction or 'NONE'}
 
-User's financial summary:
-- Balance: ${summary.get('totalBalance', 0):.2f}
-- Monthly expenses: ${summary.get('monthlyExpenses', 0):.2f}
-- Savings rate: {summary.get('savingsRate', 0):.1f}%
+Balance: ${summary.get('totalBalance', 0):.0f}
+Monthly expenses: ${summary.get('monthlyExpenses', 0):.0f}
 
-Rewritten insight:"""
+Format:
+TITLE: [clear title]
+MESSAGE: [actionable message]
+ACTION: [specific action or NONE]"""
 
-        gen = await _call_llm_generate(prompt, max_tokens=150)
+        gen = await _call_llm_generate(prompt, max_tokens=80)
         if not gen:
             return insight
         
-        # Parse response
+        # Quick parsing
         new_title = insight.title
         new_message = insight.message
         new_action = insight.suggestedAction
         
-        for line in gen.strip().split('\n'):
+        lines = gen.strip().split('\n')
+        for line in lines:
             line = line.strip()
             if line.upper().startswith("TITLE:"):
-                new_title = line.split(":", 1)[1].strip()
+                new_title = line.split(":", 1)[1].strip()[:100]
             elif line.upper().startswith("MESSAGE:"):
-                new_message = line.split(":", 1)[1].strip()
+                new_message = line.split(":", 1)[1].strip()[:300]
             elif line.upper().startswith("ACTION:"):
                 action = line.split(":", 1)[1].strip()
                 new_action = action if action.upper() != "NONE" else insight.suggestedAction
@@ -198,8 +241,8 @@ Rewritten insight:"""
         return Insight(
             type=insight.type,
             category=insight.category,
-            title=new_title,
-            message=new_message,
+            title=new_title if new_title else insight.title,
+            message=new_message if new_message else insight.message,
             priority=insight.priority,
             actionable=insight.actionable,
             suggestedAction=new_action
@@ -209,34 +252,88 @@ Rewritten insight:"""
         return insight
 
 async def enhance_recommendation_with_llm(rec: str, summary: Dict) -> str:
-    """Enhance recommendation using local LLM"""
+    """Enhanced recommendation with shorter prompts"""
     try:
-        prompt = f"""Rewrite this financial recommendation to be more actionable and friendly. Keep it under 50 words.
+        prompt = f"""Make this financial tip more actionable (under 40 words):
+{rec}
 
-Original: {rec}
+Balance: ${summary.get('totalBalance', 0):.0f}
+Expenses: ${summary.get('monthlyExpenses', 0):.0f}
 
-User's balance: ${summary.get('totalBalance', 0):.2f}
-Monthly expenses: ${summary.get('monthlyExpenses', 0):.2f}
+Improved tip:"""
 
-Improved recommendation:"""
-
-        gen = await _call_llm_generate(prompt, max_tokens=80)
+        gen = await _call_llm_generate(prompt, max_tokens=60)
         if not gen:
             return rec
         
-        # Clean up the response
+        # Clean response
         improved = gen.strip()
-        # Remove common prefixes the model might add
-        for prefix in ["Improved recommendation:", "Here's", "Recommendation:"]:
-            if improved.startswith(prefix):
+        for prefix in ["Improved tip:", "Here's", "Recommendation:", "Tip:"]:
+            if improved.lower().startswith(prefix.lower()):
                 improved = improved[len(prefix):].strip()
         
-        return improved if improved else rec
+        return improved[:200] if improved else rec
     except Exception as e:
         print(f"[enhance_recommendation error] {e}")
         return rec
 
-# ============= ANALYSIS FUNCTIONS (keep all existing functions) =============
+# ============= PARALLEL LLM PROCESSING =============
+
+async def enhance_insights_parallel(insights: List[Insight], summary: Dict, max_enhance: int = 2) -> List[Insight]:
+    """
+    Enhance multiple insights in parallel for speed
+    Only enhance top N insights to save time
+    """
+    if not insights:
+        return insights
+    
+    # Only enhance top priority insights
+    to_enhance = insights[:max_enhance]
+    rest = insights[max_enhance:]
+    
+    # Process in parallel
+    tasks = [enhance_insight_with_llm(ins, summary) for ins in to_enhance]
+    enhanced = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Replace with enhanced versions (fallback to original on error)
+    result = []
+    for i, item in enumerate(enhanced):
+        if isinstance(item, Insight):
+            result.append(item)
+        else:
+            print(f"[Error enhancing insight {i}]: {item}")
+            result.append(to_enhance[i])
+    
+    return result + rest
+
+async def enhance_recommendations_parallel(recommendations: List[str], summary: Dict, max_enhance: int = 2) -> List[str]:
+    """
+    Enhance multiple recommendations in parallel
+    Only enhance top N recommendations
+    """
+    if not recommendations:
+        return recommendations
+    
+    # Only enhance top recommendations
+    to_enhance = recommendations[:max_enhance]
+    rest = recommendations[max_enhance:]
+    
+    # Process in parallel
+    tasks = [enhance_recommendation_with_llm(rec, summary) for rec in to_enhance]
+    enhanced = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Replace with enhanced versions (fallback to original on error)
+    result = []
+    for i, item in enumerate(enhanced):
+        if isinstance(item, str):
+            result.append(item)
+        else:
+            print(f"[Error enhancing recommendation {i}]: {item}")
+            result.append(to_enhance[i])
+    
+    return result + rest
+
+# ============= ANALYSIS FUNCTIONS (unchanged) =============
 
 def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
     """Analyze spending patterns and trends"""
@@ -586,13 +683,15 @@ def generate_recommendations(insights: List[Insight], score: int, analysis: Dict
 def root():
     return {
         "message": "MyFin AI Recommender Service 🤖",
-        "version": "1.0.0",
+        "version": "2.0.0-optimized",
         "status": "running",
         "llm_available": asyncio.run(check_ollama_available()),
+        "optimizations": ["parallel_processing", "llm_caching", "reduced_tokens", "faster_timeouts"],
         "endpoints": {
             "recommendations": "/api/recommendations",
             "health": "/health",
-            "docs": "/docs"
+            "docs": "/docs",
+            "cache_stats": "/cache-stats"
         }
     }
 
@@ -603,13 +702,28 @@ async def health_check():
         "status": "healthy",
         "service": "ai-recommender",
         "llm_available": ollama_status,
-        "llm_provider": "ollama" if ollama_status else "none"
+        "llm_provider": "ollama" if ollama_status else "none",
+        "cache_size": len(llm_cache),
+        "max_cache_size": CACHE_SIZE
+    }
+
+@app.get("/cache-stats")
+async def cache_stats():
+    """Get LLM cache statistics"""
+    return {
+        "cache_entries": len(llm_cache),
+        "max_cache_size": CACHE_SIZE,
+        "cache_keys": list(llm_cache.keys())[:10]  # Show first 10
     }
 
 @app.post("/api/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(data: UserFinancialData):
-    """Generate personalized financial recommendations"""
+    """
+    Generate personalized financial recommendations
+    OPTIMIZED with parallel LLM processing
+    """
     try:
+        # Step 1: Fast analysis (no LLM)
         analysis = analyze_spending_patterns(data.transactions)
         insights = generate_insights(data, analysis)
         score = calculate_financial_health_score(data, analysis)
@@ -624,32 +738,34 @@ async def get_recommendations(data: UserFinancialData):
             'topCategory': analysis.get('top_category'),
             'spendingTrend': analysis.get('spending_trend')
         }
-
-        # Try to enhance with LLM if available
+        print("Analysis with no LLM")
+        # Step 2: Try to enhance with LLM (parallel, non-blocking)
+        llm_enhanced = False
         try:
             if await check_ollama_available():
-                print("[AI] Enhancing insights with local LLM...")
-                # Enhance top 3 insights only
-                insight_tasks = [enhance_insight_with_llm(ins, summary) for ins in insights[:3]]
-                enhanced_top_insights = await asyncio.gather(*insight_tasks, return_exceptions=True)
+                print("[AI] Enhancing with LLM in parallel...")
+                start_time = asyncio.get_event_loop().time()
                 
-                # Replace top insights with enhanced versions
-                for i, enhanced in enumerate(enhanced_top_insights):
-                    if isinstance(enhanced, Insight):
-                        insights[i] = enhanced
+                # Process top 2 insights and top 2 recommendations in parallel
+                enhanced_insights, enhanced_recs = await asyncio.gather(
+                    enhance_insights_parallel(insights, summary, max_enhance=2),
+                    enhance_recommendations_parallel(recommendations, summary, max_enhance=2),
+                    return_exceptions=True
+                )
                 
-                # Enhance top 3 recommendations
-                rec_tasks = [enhance_recommendation_with_llm(r, summary) for r in recommendations[:3]]
-                enhanced_top_recs = await asyncio.gather(*rec_tasks, return_exceptions=True)
+                # Use enhanced versions if successful
+                if isinstance(enhanced_insights, list):
+                    insights = enhanced_insights
+                    llm_enhanced = True
                 
-                # Replace top recommendations with enhanced versions
-                for i, enhanced in enumerate(enhanced_top_recs):
-                    if isinstance(enhanced, str):
-                        recommendations[i] = enhanced
+                if isinstance(enhanced_recs, list):
+                    recommendations = enhanced_recs
+                    llm_enhanced = True
                 
-                print("[AI] LLM enhancement complete")
+                elapsed = asyncio.get_event_loop().time() - start_time
+                print(f"[AI] LLM enhancement complete in {elapsed:.2f}s")
         except Exception as e:
-            print(f"[AI] LLM enhancement failed, using default: {e}")
+            print(f"[AI] LLM enhancement failed (non-critical): {e}")
         
         return RecommendationResponse(
             insights=insights,
@@ -665,4 +781,7 @@ async def get_recommendations(data: UserFinancialData):
 
 if __name__ == "__main__":
     import uvicorn
+    print("Starting Optimized AI Recommender Service...")
+    print(f"LLM Model: {OLLAMA_MODEL}")
+    print(f"Max Tokens: {MAX_TOKENS}")
     uvicorn.run(app, host="0.0.0.0", port=8000)

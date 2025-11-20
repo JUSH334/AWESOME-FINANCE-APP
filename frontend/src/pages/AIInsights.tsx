@@ -1,4 +1,4 @@
-// frontend/src/pages/AIInsights.tsx - UPDATED VERSION
+// frontend/src/pages/AIInsights.tsx - FIXED VERSION
 import { useState, useEffect } from 'react';
 import { Brain, TrendingUp, AlertTriangle, CheckCircle, Info, Zap, Loader2, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
@@ -260,7 +260,24 @@ export default function AIInsightsPage() {
     );
   }
 
-  // Success - show insights (rest of the component remains the same as before)
+  // Check if data has completed status and required properties before destructuring
+  if (!data || data.status !== 'completed' || !data.overallScore) {
+    return (
+      <div className="rounded-2xl bg-slate-50 border border-slate-200 p-8 text-center">
+        <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-slate-900 mb-2">No Data Available</h3>
+        <p className="text-slate-600 mb-6">Unable to display insights at this time.</p>
+        <button
+          onClick={handleRefresh}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl font-medium transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
+  // Success - show insights (safe to destructure now)
   const { overallScore, insights, predictions, recommendations, summary, llmEnhanced, generatedAt } = data;
 
   return (
@@ -309,14 +326,14 @@ export default function AIInsightsPage() {
               <circle
                 cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="12" fill="none"
                 strokeDasharray={`${2 * Math.PI * 56}`}
-                strokeDashoffset={`${2 * Math.PI * 56 * (1 - (overallScore || 0) / 100)}`}
-                className={getScoreColor(overallScore || 0)}
+                strokeDashoffset={`${2 * Math.PI * 56 * (1 - overallScore / 100)}`}
+                className={getScoreColor(overallScore)}
                 strokeLinecap="round"
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className={`text-3xl font-bold ${getScoreColor(overallScore || 0)}`}>{overallScore}</div>
+                <div className={`text-3xl font-bold ${getScoreColor(overallScore)}`}>{overallScore}</div>
                 <div className="text-xs text-slate-500">out of 100</div>
               </div>
             </div>
@@ -324,11 +341,11 @@ export default function AIInsightsPage() {
 
           <div className="flex-1 space-y-3">
             <div>
-              <p className={`text-2xl font-semibold mb-1 ${getScoreColor(overallScore || 0)}`}>
-                {getScoreLabel(overallScore || 0)}
+              <p className={`text-2xl font-semibold mb-1 ${getScoreColor(overallScore)}`}>
+                {getScoreLabel(overallScore)}
               </p>
               <p className="text-slate-600 text-sm">
-                Your financial health is {getScoreLabel(overallScore || 0).toLowerCase()}.
+                Your financial health is {getScoreLabel(overallScore).toLowerCase()}.
               </p>
             </div>
 

@@ -1,4 +1,3 @@
-
 package backend.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -16,7 +15,7 @@ public class RestTemplateConfig {
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
             .setConnectTimeout(Duration.ofSeconds(10))
-            .setReadTimeout(Duration.ofSeconds(30))
+            .setReadTimeout(Duration.ofSeconds(120)) // Increased to 120 seconds for AI processing
             .build();
     }
 }
