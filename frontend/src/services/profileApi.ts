@@ -25,8 +25,14 @@ export interface PasswordChangeData {
   newPassword: string;
 }
 
-export interface ExportDataRequest {
-  format: 'csv' | 'json' | 'xlsx' | 'pdf';
+export interface FinancialGoalsData {
+  savingsGoal?: number;
+  monthlyIncome?: number;
+}
+
+export interface FinancialGoalsResponse {
+  savingsGoal: number;
+  monthlyIncome: number;
 }
 
 export const profileApi = {
@@ -99,6 +105,43 @@ export const profileApi = {
     }
   },
 
+  // ==================== FINANCIAL GOALS ====================
+
+  async getFinancialGoals(): Promise<FinancialGoalsResponse> {
+    const response = await fetch(`${API_BASE_URL}/users/financial-goals`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...tokenManager.getAuthHeader()
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to fetch financial goals');
+    }
+
+    return response.json();
+  },
+
+  async updateFinancialGoals(data: FinancialGoalsData): Promise<FinancialGoalsResponse> {
+    const response = await fetch(`${API_BASE_URL}/users/financial-goals`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...tokenManager.getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to update financial goals');
+    }
+
+    return response.json();
+  },
+
+  // ==================== DATA EXPORT ====================
 
   async exportData(format: string = 'csv'): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/users/export-data`, {

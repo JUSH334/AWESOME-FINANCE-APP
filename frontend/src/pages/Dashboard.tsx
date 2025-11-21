@@ -1,10 +1,10 @@
-﻿﻿// frontend/src/pages/Dashboard.tsx
-import { Wallet, TrendingUp, TrendingDown, PiggyBank } from "lucide-react";
+﻿﻿import { Wallet, TrendingUp, TrendingDown, PiggyBank } from "lucide-react";
 import { Card } from "../components/ui/Card";
 import { Stat } from "../components/ui/Stat";
 import NetWorthBar from "../charts/NetWorthBar";
 import BudgetDonut from "../charts/BudgetDonut";
 import { api } from "../services/api";
+import { profileApi } from "../services/profileApi";
 import { useEffect, useState } from "react";
 import type { DashboardData } from "../types";
 
@@ -15,13 +15,54 @@ function currency(n: number) {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savingsGoal, setSavingsGoal] = useState(12000);
 
   useEffect(() => { 
-    setLoading(true);
-    api.getDashboard()
-      .then(setData)
-      .finally(() => setLoading(false));
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Load both dashboard data and financial goals in parallel
+      const [dashboardData, financialGoals] = await Promise.all([
+        api.getDashboard(),
+        profileApi.getFinancialGoals().catch(() => ({ savingsGoal: 12000, monthlyIncome: 0 }))
+      ]);
+
+      // Update savings goal from user's profile
+      const userSavingsGoal = financialGoals.savingsGoal || 12000;
+      setSavingsGoal(userSavingsGoal);
+
+      // Recalculate goal progress with real savings goal
+      const updatedData = {
+        ...dashboardData,
+        summary: {
+          ...dashboardData.summary,
+          savingsGoal: userSavingsGoal,
+          goalProgress: Math.min(dashboardData.summary.total / userSavingsGoal, 1)
+        }
+      };
+
+      setData(updatedData);
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+      // Set empty data on error
+      setData({
+        summary: { 
+          total: 0, 
+          income: 0, 
+          expenses: 0, 
+          savingsGoal: 12000, 
+          goalProgress: 0 
+        },
+        netWorth: [],
+        budget: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -54,26 +95,55 @@ export default function DashboardPage() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
         <Card title="Total Balance" icon={<Wallet size={18} />}>
-          <Stat value={currency(summary.total)} note={summary.total > 0 ? "Your current balance" : "Start adding accounts"} tone={summary.total > 0 ? "up" : "default"} />
+          <Stat 
+            value={currency(summary.total)} 
+            note={summary.total > 0 ? "Your current balance" : "Start adding accounts"} 
+            tone={summary.total > 0 ? "up" : "default"} 
+          />
         </Card>
+        
         <Card title="Monthly Income" icon={<TrendingUp size={18} />}>
-          <Stat value={currency(summary.income)} note={summary.income > 0 ? "Last 30 days" : "No income recorded"} tone={summary.income > 0 ? "up" : "default"} />
+          <Stat 
+            value={currency(summary.income)} 
+            note={summary.income > 0 ? "Last 30 days" : "No income recorded"} 
+            tone={summary.income > 0 ? "up" : "default"} 
+          />
         </Card>
+        
         <Card title="Monthly Expenses" icon={<TrendingDown size={18} />}>
-          <Stat value={currency(summary.expenses)} note={summary.expenses > 0 ? "Last 30 days" : "No expenses recorded"} tone={summary.expenses > 0 ? "down" : "default"} />
+          <Stat 
+            value={currency(summary.expenses)} 
+            note={summary.expenses > 0 ? "Last 30 days" : "No expenses recorded"} 
+            tone={summary.expenses > 0 ? "down" : "default"} 
+          />
         </Card>
+        
         <Card title="Savings Goal" icon={<PiggyBank size={18} />}>
           <div className="flex items-end justify-between">
             <div className="text-3xl font-semibold">{currency(summary.savingsGoal)}</div>
-            <div className="text-sm text-slate-500">{Math.round(summary.goalProgress * 100)}% completed</div>
+            <div className="text-sm text-slate-500">
+              {Math.round(summary.goalProgress * 100)}% completed
+            </div>
           </div>
           <div className="h-2 mt-3 w-full rounded-full bg-slate-200 overflow-hidden">
-            <div className="h-full"
+            <div 
+              className="h-full transition-all duration-500"
               style={{
                 width: `${summary.goalProgress * 100}%`,
                 background: "linear-gradient(90deg, #00C289 0%, #009E67 100%)",
               }} 
             />
+          </div>
+          <div className="mt-2 text-xs text-slate-600">
+            {summary.total < summary.savingsGoal ? (
+              <>
+                {currency(summary.savingsGoal - summary.total)} remaining to reach goal
+              </>
+            ) : (
+              <>
+                🎉 Goal achieved! Consider setting a new goal.
+              </>
+            )}
           </div>
         </Card>
       </div>

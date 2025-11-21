@@ -320,71 +320,77 @@ export const api = {
   },
 
   async getDashboard(): Promise<DashboardData> {
-    try {
-      // Import dataApi to avoid circular dependency
-      const { dataApi } = await import('./dataApi');
-      
-      const [accounts, transactions] = await Promise.all([
-        dataApi.getAccounts(),
-        dataApi.getTransactions()
-      ]);
+  try {
+    // Import dataApi to avoid circular dependency
+    const { dataApi } = await import('./dataApi');
+    const { profileApi } = await import('./profileApi');
+    
+    const [accounts, transactions, financialGoals] = await Promise.all([
+      dataApi.getAccounts(),
+      dataApi.getTransactions(),
+      profileApi.getFinancialGoals().catch(() => ({ savingsGoal: 12000, monthlyIncome: 0 }))
+    ]);
 
-      // Calculate summary from real data
-      const total = accounts.reduce((sum: number, acc: any) => {
-        const balance = typeof acc.balance === 'string' ? parseFloat(acc.balance) : acc.balance;
-        return sum + (balance || 0);
+    // Calculate summary from real data
+    const total = accounts.reduce((sum: number, acc: any) => {
+      const balance = typeof acc.balance === 'string' ? parseFloat(acc.balance) : acc.balance;
+      return sum + (balance || 0);
+    }, 0);
+    
+    // Calculate income and expenses from last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentTransactions = transactions.filter((t: any) => {
+      const txnDate = new Date(t.transactionDate || t.date);
+      return txnDate >= thirtyDaysAgo;
+    });
+    
+    const income = recentTransactions
+      .filter((t: any) => t.type === 'in')
+      .reduce((sum: number, t: any) => {
+        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+        return sum + (amount || 0);
       }, 0);
-      
-      // Calculate income and expenses from last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const recentTransactions = transactions.filter((t: any) => {
-        const txnDate = new Date(t.transactionDate || t.date);
-        return txnDate >= thirtyDaysAgo;
-      });
-      
-      const income = recentTransactions
-        .filter((t: any) => t.type === 'in')
-        .reduce((sum: number, t: any) => {
-          const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
-          return sum + (amount || 0);
-        }, 0);
-      
-      const expenses = recentTransactions
-        .filter((t: any) => t.type === 'out')
-        .reduce((sum: number, t: any) => {
-          const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
-          return sum + (amount || 0);
-        }, 0);
+    
+    const expenses = recentTransactions
+      .filter((t: any) => t.type === 'out')
+      .reduce((sum: number, t: any) => {
+        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount;
+        return sum + (amount || 0);
+      }, 0);
 
-      // Calculate net worth over last 6 months
-      const netWorth = this.calculateNetWorthHistory(transactions);
-      
-      // Calculate budget breakdown
-      const budget = this.calculateBudgetBreakdown(recentTransactions, income);
+    // Calculate net worth over last 6 months
+    const netWorth = this.calculateNetWorthHistory(transactions);
+    
+    // Calculate budget breakdown
+    const budget = this.calculateBudgetBreakdown(recentTransactions, income);
 
-      return {
-        summary: {
-          total,
-          income,
-          expenses,
-          savingsGoal: 12000, // You can make this user-configurable later
-          goalProgress: Math.min(total / 12000, 1)
-        },
-        netWorth,
-        budget
-      };
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      // Return empty data structure on error
-      return {
-        summary: { total: 0, income: 0, expenses: 0, savingsGoal: 12000, goalProgress: 0 },
-        netWorth: [],
-        budget: []
-      };
-    }
-  },
+    // Use real savings goal from user profile
+    const savingsGoal = financialGoals.savingsGoal || 12000;
+    const goalProgress = Math.min(total / savingsGoal, 1);
+
+    return {
+      summary: {
+        total,
+        income,
+        expenses,
+        savingsGoal,
+        goalProgress
+      },
+      netWorth,
+      budget
+    };
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
+    // Return empty data structure on error
+    return {
+      summary: { total: 0, income: 0, expenses: 0, savingsGoal: 12000, goalProgress: 0 },
+      netWorth: [],
+      budget: []
+    };
+  }
+},
 
   async getAccounts(): Promise<Account[]> {
     try {

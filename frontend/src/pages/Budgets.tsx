@@ -1,9 +1,11 @@
-﻿﻿// frontend/src/pages/Budgets.tsx
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Calculator, PiggyBank, TrendingDown, AlertTriangle, CheckCircle, Loader2, X } from "lucide-react";
+﻿﻿import { useState, useEffect } from "react";
+import { Plus, Trash2, Edit2, Calculator, PiggyBank, TrendingDown, AlertTriangle, CheckCircle, Loader2, X, ArrowUpDown, Save } from "lucide-react";
 import { budgetApi, type Budget } from "../services/budgetApi";
+import { profileApi } from "../services/profileApi";
 
 type TabKey = "budgets" | "calculator";
+type SortField = "name" | "usage";
+type SortDirection = "asc" | "desc";
 
 const CATEGORIES = [
   "Groceries",
@@ -31,19 +33,66 @@ export default function BudgetsPage() {
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Sort state
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
   // Form state
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [periodType, setPeriodType] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Calculator state
+  // Calculator state with saved goals
   const [income, setIncome] = useState(5000);
   const [savePct, setSavePct] = useState(20);
+  const [savingsGoal, setSavingsGoal] = useState(12000);
+  const [monthlyIncome, setMonthlyIncome] = useState(5000);
+  const [hasLoadedGoals, setHasLoadedGoals] = useState(false);
   const savings = Math.round((income * savePct) / 100);
 
   useEffect(() => {
     loadBudgets();
+    loadFinancialGoals();
   }, []);
+
+  const loadFinancialGoals = async () => {
+    try {
+      const goals = await profileApi.getFinancialGoals();
+      if (goals.savingsGoal) {
+        setSavingsGoal(Number(goals.savingsGoal));
+      }
+      if (goals.monthlyIncome) {
+        setMonthlyIncome(Number(goals.monthlyIncome));
+        setIncome(Number(goals.monthlyIncome));
+      }
+      setHasLoadedGoals(true);
+    } catch (error) {
+      console.error('Failed to load financial goals:', error);
+      setHasLoadedGoals(true);
+    }
+  };
+
+  const handleSaveFinancialGoals = async () => {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      await profileApi.updateFinancialGoals({
+        savingsGoal,
+        monthlyIncome: income
+      });
+      setMessage({ type: 'success', text: 'Financial goals saved successfully!' });
+      setMonthlyIncome(income);
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to save financial goals' 
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
 
   const loadBudgets = async () => {
     try {
@@ -57,6 +106,29 @@ export default function BudgetsPage() {
       setLoading(false);
     }
   };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedBudgets = [...budgets].sort((a, b) => {
+    let comparison = 0;
+
+    if (sortField === 'name') {
+      comparison = a.category.localeCompare(b.category);
+    } else if (sortField === 'usage') {
+      const usageA = (a.spent / a.amount) * 100;
+      const usageB = (b.spent / b.amount) * 100;
+      comparison = usageA - usageB;
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
 
   const handleOpenModal = (budget?: Budget) => {
     if (budget) {
@@ -160,7 +232,7 @@ export default function BudgetsPage() {
   const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
   const totalRemaining = totalBudgeted - totalSpent;
 
-  if (loading) {
+  if (loading && !hasLoadedGoals) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -173,9 +245,6 @@ export default function BudgetsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-
-
       {/* Message Banner */}
       {message && (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${
@@ -271,8 +340,32 @@ export default function BudgetsPage() {
             </div>
           </div>
 
-          {/* Add Budget Button */}
-          <div className="flex justify-end">
+          {/* Add Budget Button & Sort Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleSort('name')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  sortField === 'name'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </button>
+              <button
+                onClick={() => handleSort('usage')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  sortField === 'usage'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                Usage {sortField === 'usage' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </button>
+            </div>
             <button
               onClick={() => handleOpenModal()}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors"
@@ -297,7 +390,7 @@ export default function BudgetsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {budgets.map((budget) => {
+              {sortedBudgets.map((budget) => {
                 const status = getBudgetStatus(budget);
                 const StatusIcon = status.icon;
                 const percentage = Math.min((budget.spent / budget.amount) * 100, 100);
@@ -371,9 +464,9 @@ export default function BudgetsPage() {
       {/* Calculator Tab */}
       {activeTab === "calculator" && (
         <div className="rounded-2xl bg-white border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Savings Calculator</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Savings Calculator & Goals</h3>
           <p className="text-sm text-slate-600 mb-6">
-            Calculate how much you can save based on your income and savings goals
+            Set your financial goals and calculate how much you can save
           </p>
 
           <div className="space-y-6">
@@ -393,26 +486,58 @@ export default function BudgetsPage() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
-                  Savings Percentage (%)
+                  Savings Goal ($)
                 </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={savePct}
-                    onChange={(e) => setSavePct(Number(e.target.value))}
-                    className="flex-1"
-                  />
-                  <input
-                    type="number"
-                    value={savePct}
-                    onChange={(e) => setSavePct(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                    className="w-20 rounded-xl border border-slate-300 px-3 py-2 text-center focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                  />
-                </div>
+                <input
+                  type="number"
+                  value={savingsGoal}
+                  onChange={(e) => setSavingsGoal(Number(e.target.value) || 0)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                  placeholder="12000"
+                />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Savings Percentage (%)
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={savePct}
+                  onChange={(e) => setSavePct(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <input
+                  type="number"
+                  value={savePct}
+                  onChange={(e) => setSavePct(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                  className="w-20 rounded-xl border border-slate-300 px-3 py-2 text-center focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Save Goals Button */}
+            <button
+              onClick={handleSaveFinancialGoals}
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Financial Goals
+                </>
+              )}
+            </button>
 
             <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 p-6">
               <div className="flex items-center justify-between">
@@ -439,6 +564,27 @@ export default function BudgetsPage() {
                   <p className="text-lg font-semibold text-emerald-900">{formatCurrency(savings * 60)}</p>
                 </div>
               </div>
+
+              {/* Progress to Goal */}
+              {savingsGoal > 0 && (
+                <div className="mt-6 pt-6 border-t border-emerald-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-emerald-700 font-medium">Progress to Savings Goal</p>
+                    <p className="text-sm text-emerald-900 font-semibold">
+                      {((savings * 12 / savingsGoal) * 100).toFixed(1)}% per year
+                    </p>
+                  </div>
+                  <div className="h-2 bg-emerald-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 rounded-full transition-all"
+                      style={{ width: `${Math.min(100, (savings * 12 / savingsGoal) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-emerald-700 mt-2">
+                    {Math.ceil(savingsGoal / (savings * 12))} years to reach your goal of {formatCurrency(savingsGoal)}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
