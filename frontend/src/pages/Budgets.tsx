@@ -524,8 +524,7 @@ export default function BudgetsPage() {
             <button
               onClick={handleSaveFinancialGoals}
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-            >
+className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"            >
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />

@@ -1,4 +1,4 @@
-﻿﻿// frontend/src/pages/Accounts.tsx
+﻿﻿// frontend/src/pages/Accounts.tsx - Updated with bulk delete
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Filter, X, ArrowUpDown, Edit2, Trash2, Loader2 } from "lucide-react";
@@ -39,6 +39,9 @@ export default function AccountsPage() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
+  // Bulk selection states
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string | number>>(new Set());
+
   // Edit modals
   const [editingAccount, setEditingAccount] = useState<AccountRow | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Txn | null>(null);
@@ -48,7 +51,6 @@ export default function AccountsPage() {
   // Message state
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load accounts + transactions
   useEffect(() => {
     loadData();
   }, []);
@@ -92,11 +94,10 @@ export default function AccountsPage() {
       return `${month}/${day}/${year}`;
     } catch (e) {
       console.error('Date parsing error:', e, 'for date:', dateStr);
-      return `${e}: Invalid Date`;
+      return 'Invalid Date';
     }
   };
 
-  // Get unique categories from transactions
   const categories = useMemo(() => {
     const cats = new Set<string>();
     txns.forEach(t => {
@@ -105,7 +106,6 @@ export default function AccountsPage() {
     return Array.from(cats).sort();
   }, [txns]);
 
-  // Clear all filters
   const clearFilters = () => {
     setSelectedAccount("all");
     setSelectedType("all");
@@ -117,7 +117,6 @@ export default function AccountsPage() {
     setQ("");
   };
 
-  // Check if any filters are active
   const hasActiveFilters = selectedAccount !== "all" ||
     selectedType !== "all" ||
     selectedCategory !== "all" ||
@@ -127,7 +126,6 @@ export default function AccountsPage() {
     amountMax ||
     q;
 
-  // Toggle sort
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -137,11 +135,9 @@ export default function AccountsPage() {
     }
   };
 
-  // Filter and sort transactions
   const filteredAndSorted = useMemo(() => {
     let result = [...txns];
 
-    // Search filter
     if (q) {
       const searchLower = q.toLowerCase();
       result = result.filter((r) =>
@@ -151,22 +147,18 @@ export default function AccountsPage() {
       );
     }
 
-    // Account filter
     if (selectedAccount !== "all") {
       result = result.filter(t => t.accountId?.toString() === selectedAccount);
     }
 
-    // Type filter
     if (selectedType !== "all") {
       result = result.filter(t => t.type === selectedType);
     }
 
-    // Category filter
     if (selectedCategory !== "all") {
       result = result.filter(t => t.category === selectedCategory);
     }
 
-    // Date range filter
     if (dateFrom) {
       result = result.filter(t => {
         const txnDate = t.date || t.transactionDate || '';
@@ -180,7 +172,6 @@ export default function AccountsPage() {
       });
     }
 
-    // Amount range filter
     if (amountMin) {
       const min = parseFloat(amountMin);
       result = result.filter(t => t.amount >= min);
@@ -190,7 +181,6 @@ export default function AccountsPage() {
       result = result.filter(t => t.amount <= max);
     }
 
-    // Sort
     result.sort((a, b) => {
       let comparison = 0;
 
@@ -213,6 +203,64 @@ export default function AccountsPage() {
 
     return result;
   }, [txns, q, selectedAccount, selectedType, selectedCategory, dateFrom, dateTo, amountMin, amountMax, sortField, sortDirection]);
+
+  // Bulk selection functions
+  const toggleTransaction = (id: string | number) => {
+    const newSelected = new Set(selectedTransactions);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedTransactions(newSelected);
+  };
+
+  const toggleAll = () => {
+    if (selectedTransactions.size === filteredAndSorted.length) {
+      setSelectedTransactions(new Set());
+    } else {
+      setSelectedTransactions(new Set(filteredAndSorted.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTransactions.size === 0) {
+      setMessage({ type: 'error', text: 'No transactions selected' });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedTransactions.size} transaction(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      // Delete all selected transactions
+      await Promise.all(
+        Array.from(selectedTransactions).map(id =>
+          dataApi.deleteTransaction(Number(id))
+        )
+      );
+
+      setMessage({ 
+        type: 'success', 
+        text: `Successfully deleted ${selectedTransactions.size} transaction(s)!` 
+      });
+      
+      setSelectedTransactions(new Set());
+      await loadData();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to delete transactions'
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
 
   const handleDeleteAccount = async (id: string | number) => {
     if (!confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
@@ -360,7 +408,7 @@ export default function AccountsPage() {
         </div>
       )}
 
-      {/* ---------- Accounts ---------- */}
+      {/* Accounts Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Accounts</h2>
@@ -391,7 +439,6 @@ export default function AccountsPage() {
                     padding: "20px",
                   }}
                 >
-                  {/* Edit/Delete buttons */}
                   <div className="absolute top-3 right-3 flex gap-2">
                     <button
                       onClick={() => {
@@ -442,7 +489,7 @@ export default function AccountsPage() {
         )}
       </section>
 
-      {/* ---------- Transactions ---------- */}
+      {/* Transactions Section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Transactions</h2>
@@ -496,7 +543,6 @@ export default function AccountsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Account Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Account</label>
                 <select
@@ -513,7 +559,6 @@ export default function AccountsPage() {
                 </select>
               </div>
 
-              {/* Type Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Type</label>
                 <select
@@ -527,7 +572,6 @@ export default function AccountsPage() {
                 </select>
               </div>
 
-              {/* Category Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Category</label>
                 <select
@@ -544,7 +588,6 @@ export default function AccountsPage() {
                 </select>
               </div>
 
-              {/* Date From */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Date From</label>
                 <input
@@ -555,7 +598,6 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {/* Date To */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Date To</label>
                 <input
@@ -566,7 +608,6 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {/* Amount Min */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Min Amount</label>
                 <input
@@ -579,7 +620,6 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {/* Amount Max */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Max Amount</label>
                 <input
@@ -595,20 +635,46 @@ export default function AccountsPage() {
           </div>
         )}
 
-        {/* Results Summary */}
-        <div className="flex items-center justify-between text-sm text-slate-600">
-          <div>
+        {/* Results Summary and Bulk Actions */}
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-slate-600">
             Showing <span className="font-semibold text-slate-900">{filteredAndSorted.length}</span> of{" "}
             <span className="font-semibold text-slate-900">{txns.length}</span> transactions
+            {selectedTransactions.size > 0 && (
+              <span className="ml-2 text-emerald-600 font-semibold">
+                ({selectedTransactions.size} selected)
+              </span>
+            )}
           </div>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-emerald-600 hover:text-emerald-700 font-medium"
-            >
-              Clear filters
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-emerald-600 hover:text-emerald-700 font-medium"
+              >
+                Clear filters
+              </button>
+            )}
+            {selectedTransactions.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected ({selectedTransactions.size})
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Transactions Table */}
@@ -627,6 +693,14 @@ export default function AccountsPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-slate-700">
                 <tr>
+                  <th className="text-left p-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.size === filteredAndSorted.length && filteredAndSorted.length > 0}
+                      onChange={toggleAll}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </th>
                   <th className="text-left p-3">
                     <button
                       onClick={() => handleSort('date')}
@@ -663,7 +737,17 @@ export default function AccountsPage() {
                 {filteredAndSorted.map((r) => {
                   const account = accounts.find(a => a.id.toString() === r.accountId?.toString());
                   return (
-                    <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
+                    <tr key={r.id} className={`border-t border-slate-100 hover:bg-slate-50 ${
+                      selectedTransactions.has(r.id) ? 'bg-emerald-50' : ''
+                    }`}>
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedTransactions.has(r.id)}
+                          onChange={() => toggleTransaction(r.id)}
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </td>
                       <td className="p-3 text-slate-900">
                         {formatDate(r.date || r.transactionDate)}
                       </td>
@@ -717,7 +801,7 @@ export default function AccountsPage() {
                 })}
                 {filteredAndSorted.length === 0 && (
                   <tr>
-                    <td className="p-8 text-center text-slate-500" colSpan={6}>
+                    <td className="p-8 text-center text-slate-500" colSpan={7}>
                       <div className="space-y-2">
                         <p className="font-medium">No transactions match your filters</p>
                         <button

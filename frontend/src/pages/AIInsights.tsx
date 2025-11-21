@@ -147,10 +147,7 @@ export default function AIInsightsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Brain className="w-8 h-8 text-emerald-600" />
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">AI Financial Insights</h1>
-            <p className="text-slate-600">Personalized recommendations powered by machine learning and LLM</p>
-          </div>
+          
         </div>
         <button
           onClick={fetchRecommendations}
