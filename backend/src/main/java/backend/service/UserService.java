@@ -1,4 +1,4 @@
-// backend/src/main/java/backend/service/UserService.java
+// backend/src/main/java/backend/service/UserService.java - Add these methods
 package backend.service;
 
 import backend.entity.User;
@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +54,6 @@ public class UserService {
         boolean emailChanged = false;
         String oldEmail = user.getEmail();
 
-        // Update fields if provided
         if (firstName != null && !firstName.trim().isEmpty()) {
             user.setFirstName(firstName.trim());
         }
@@ -62,31 +62,23 @@ public class UserService {
             user.setLastName(lastName.trim());
         }
         
-        // Check if email is being changed
         if (email != null && !email.trim().isEmpty() && !email.equals(user.getEmail())) {
-            // Validate email format
             if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
                 throw new IllegalArgumentException("Invalid email format");
             }
             
-            // Check if email is already taken by another user
             Optional<User> existingUser = userRepository.findByEmail(email);
             if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
                 throw new IllegalArgumentException("Email is already registered to another account");
             }
             
-            // Mark that email changed
             emailChanged = true;
             user.setEmail(email.trim());
-            
-            // Reset email verification status
             user.setIsEmailVerified(false);
             
-            // Generate new verification token
             String verificationToken = UUID.randomUUID().toString();
             user.setVerificationToken(verificationToken);
             
-            // Send verification email to NEW email address
             String fullName = buildFullName(user.getFirstName(), user.getLastName());
             emailService.sendVerificationEmail(
                 email.trim(), 
@@ -98,7 +90,6 @@ public class UserService {
         user.setUpdatedAt(LocalDateTime.now());
         User savedUser = userRepository.save(user);
         
-        // Log the email change for security
         if (emailChanged) {
             System.out.println("Email changed for user " + userId + " from " + oldEmail + " to " + email);
         }
@@ -111,22 +102,18 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
 
-        // Validate new password
         if (newPassword == null || newPassword.length() < 8) {
             throw new IllegalArgumentException("New password must be at least 8 characters long");
         }
 
-        // Check if new password is same as current
         if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("New password must be different from current password");
         }
 
-        // Update password
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -137,21 +124,54 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Verify password before deletion
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new IllegalArgumentException("Password is incorrect");
         }
 
-        // Delete all user's transactions
         List<Transaction> transactions = transactionRepository.findByUserId(userId);
         transactionRepository.deleteAll(transactions);
 
-        // Delete all user's accounts
         List<Account> accounts = accountRepository.findByUserId(userId);
         accountRepository.deleteAll(accounts);
 
-        // Delete user
         userRepository.delete(user);
+    }
+
+    // ==================== SAVINGS GOAL & INCOME ====================
+
+    @Transactional
+    public User updateFinancialGoals(Long userId, BigDecimal savingsGoal, BigDecimal monthlyIncome) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (savingsGoal != null) {
+            if (savingsGoal.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Savings goal cannot be negative");
+            }
+            user.setSavingsGoal(savingsGoal);
+        }
+
+        if (monthlyIncome != null) {
+            if (monthlyIncome.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Monthly income cannot be negative");
+            }
+            user.setMonthlyIncome(monthlyIncome);
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        return userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getFinancialGoals(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Map<String, Object> goals = new HashMap<>();
+        goals.put("savingsGoal", user.getSavingsGoal() != null ? user.getSavingsGoal() : BigDecimal.ZERO);
+        goals.put("monthlyIncome", user.getMonthlyIncome() != null ? user.getMonthlyIncome() : BigDecimal.ZERO);
+        
+        return goals;
     }
 
     @Transactional(readOnly = true)
@@ -161,7 +181,6 @@ public class UserService {
 
         Map<String, Object> data = new HashMap<>();
         
-        // User profile data
         Map<String, Object> profile = new HashMap<>();
         profile.put("id", user.getId());
         profile.put("username", user.getUsername());
@@ -169,10 +188,11 @@ public class UserService {
         profile.put("firstName", user.getFirstName());
         profile.put("lastName", user.getLastName());
         profile.put("isEmailVerified", user.getIsEmailVerified());
+        profile.put("savingsGoal", user.getSavingsGoal());
+        profile.put("monthlyIncome", user.getMonthlyIncome());
         profile.put("createdAt", user.getCreatedAt());
         data.put("profile", profile);
 
-        // Accounts data
         List<Account> accounts = accountRepository.findByUserId(userId);
         List<Map<String, Object>> accountsData = accounts.stream()
             .map(acc -> {
@@ -189,7 +209,6 @@ public class UserService {
             .collect(Collectors.toList());
         data.put("accounts", accountsData);
 
-        // Transactions data
         List<Transaction> transactions = transactionRepository.findByUserId(userId);
         List<Map<String, Object>> transactionsData = transactions.stream()
             .map(txn -> {
@@ -208,7 +227,6 @@ public class UserService {
             .collect(Collectors.toList());
         data.put("transactions", transactionsData);
 
-        // Add metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("exportDate", LocalDateTime.now());
         metadata.put("format", format);

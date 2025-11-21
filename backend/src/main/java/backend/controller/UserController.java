@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 import java.util.HashMap;
 
 @RestController
@@ -151,6 +152,44 @@ public class UserController {
         }
     }
 
+        @GetMapping("/financial-goals")
+    public ResponseEntity<?> getFinancialGoals(Authentication auth) {
+        try {
+            Long userId = getUserIdFromAuth(auth);
+            Map<String, Object> goals = userService.getFinancialGoals(userId);
+            return ResponseEntity.ok(goals);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/financial-goals")
+    public ResponseEntity<?> updateFinancialGoals(@RequestBody FinancialGoalsRequest request, Authentication auth) {
+        try {
+            Long userId = getUserIdFromAuth(auth);
+            User user = userService.updateFinancialGoals(
+                userId,
+                request.savingsGoal,
+                request.monthlyIncome
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Financial goals updated successfully");
+            response.put("savingsGoal", user.getSavingsGoal());
+            response.put("monthlyIncome", user.getMonthlyIncome());
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // ==================== HELPER METHODS ====================
 
     private Long getUserIdFromAuth(Authentication auth) {
@@ -170,6 +209,10 @@ public class UserController {
     }
 
     // ==================== REQUEST DTOs ====================
+    public static class FinancialGoalsRequest {
+        public BigDecimal savingsGoal;
+        public BigDecimal monthlyIncome;
+    }
 
     public static class ProfileUpdateRequest {
         public String firstName;
