@@ -12,7 +12,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class BudgetService {
@@ -29,9 +31,22 @@ public class BudgetService {
     public List<Budget> getUserBudgets(Long userId) {
         List<Budget> budgets = budgetRepository.findByUserIdAndIsActive(userId, true);
         
-        // Update spent amounts for all budgets
+        // Single query: fetch all transactions for all budgets at once
+        LocalDate startDate = calculateStartDate(budgets);
+        LocalDate endDate = LocalDate.now();
+        
+        // Get all transactions in the date range with a single query
+        List<Transaction> allTransactions = transactionRepository
+            .findByUserIdAndTransactionDateBetween(userId, startDate, endDate);
+        
+        // Calculate spending in memory instead of querying per budget
+        Map<String, BigDecimal> categorySpending = calculateCategorySpending(allTransactions, budgets);
+        
+        // Update budgets with calculated spending
         for (Budget budget : budgets) {
-            updateBudgetSpent(budget);
+            BigDecimal spent = categorySpending.getOrDefault(budget.getCategory(), BigDecimal.ZERO);
+            budget.setSpent(spent);
+            budget.setUpdatedAt(LocalDateTime.now());
         }
         
         return budgets;
@@ -40,7 +55,24 @@ public class BudgetService {
     public Budget getBudgetById(Long budgetId, Long userId) {
         Budget budget = budgetRepository.findByIdAndUserId(budgetId, userId)
             .orElseThrow(() -> new IllegalArgumentException("Budget not found"));
-        updateBudgetSpent(budget);
+        
+        // Single query: fetch transactions for this budget's period
+        LocalDate startDate = getStartDateForBudget(budget);
+        LocalDate endDate = LocalDate.now();
+        
+        List<Transaction> transactions = transactionRepository
+            .findByUserIdAndTransactionDateBetween(userId, startDate, endDate);
+        
+        // Calculate spending in memory
+        BigDecimal totalSpent = transactions.stream()
+            .filter(t -> "out".equals(t.getType()))
+            .filter(t -> budget.getCategory().equalsIgnoreCase(t.getCategory()))
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        budget.setSpent(totalSpent);
+        budget.setUpdatedAt(LocalDateTime.now());
+        
         return budget;
     }
 
@@ -72,7 +104,23 @@ public class BudgetService {
         budget.setUpdatedAt(LocalDateTime.now());
 
         Budget saved = budgetRepository.save(budget);
-        updateBudgetSpent(saved);
+        
+        // Single query to calculate initial spending
+        LocalDate startDate = getStartDateForBudget(saved);
+        LocalDate endDate = LocalDate.now();
+        
+        List<Transaction> transactions = transactionRepository
+            .findByUserIdAndTransactionDateBetween(userId, startDate, endDate);
+        
+        BigDecimal totalSpent = transactions.stream()
+            .filter(t -> "out".equals(t.getType()))
+            .filter(t -> category.equalsIgnoreCase(t.getCategory()))
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        saved.setSpent(totalSpent);
+        budgetRepository.save(saved);
+        
         return saved;
     }
 
@@ -102,9 +150,7 @@ public class BudgetService {
         }
 
         budget.setUpdatedAt(LocalDateTime.now());
-        Budget saved = budgetRepository.save(budget);
-        updateBudgetSpent(saved);
-        return saved;
+        return budgetRepository.save(budget);
     }
 
     @Transactional
@@ -115,40 +161,90 @@ public class BudgetService {
         budgetRepository.save(budget);
     }
 
-    private void updateBudgetSpent(Budget budget) {
-        LocalDate startDate;
-        LocalDate endDate = LocalDate.now();
-
-        if ("monthly".equals(budget.getPeriodType())) {
-            // Current month
-            YearMonth currentMonth = YearMonth.now();
-            startDate = currentMonth.atDay(1);
-            endDate = currentMonth.atEndOfMonth();
-        } else {
-            // Current year
-            startDate = LocalDate.now().withDayOfYear(1);
-            endDate = LocalDate.now().withDayOfYear(LocalDate.now().lengthOfYear());
-        }
-
-        List<Transaction> transactions = transactionRepository
-            .findByUserIdAndTransactionDateBetween(budget.getUserId(), startDate, endDate);
-
-        BigDecimal totalSpent = transactions.stream()
-            .filter(t -> "out".equals(t.getType()))
-            .filter(t -> budget.getCategory().equalsIgnoreCase(t.getCategory()))
-            .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        budget.setSpent(totalSpent);
-        budget.setUpdatedAt(LocalDateTime.now());
-        budgetRepository.save(budget);
-    }
-
     @Transactional
     public void recalculateAllBudgets(Long userId) {
         List<Budget> budgets = budgetRepository.findByUserIdAndIsActive(userId, true);
-        for (Budget budget : budgets) {
-            updateBudgetSpent(budget);
+        
+        if (budgets.isEmpty()) {
+            return;
         }
+
+        // Single query: fetch all transactions once
+        LocalDate startDate = calculateStartDate(budgets);
+        LocalDate endDate = LocalDate.now();
+        
+        List<Transaction> allTransactions = transactionRepository
+            .findByUserIdAndTransactionDateBetween(userId, startDate, endDate);
+        
+        // Calculate spending by category in memory
+        Map<String, BigDecimal> categorySpending = calculateCategorySpending(allTransactions, budgets);
+        
+        // Update all budgets in memory, then save
+        for (Budget budget : budgets) {
+            BigDecimal spent = categorySpending.getOrDefault(budget.getCategory(), BigDecimal.ZERO);
+            budget.setSpent(spent);
+            budget.setUpdatedAt(LocalDateTime.now());
+        }
+        
+        // Single batch save
+        budgetRepository.saveAll(budgets);
+    }
+
+    /**
+     * Calculate spending for all categories at once
+     */
+    private Map<String, BigDecimal> calculateCategorySpending(List<Transaction> transactions, List<Budget> budgets) {
+        Map<String, BigDecimal> categorySpending = new HashMap<>();
+        
+        // Initialize all budget categories
+        for (Budget budget : budgets) {
+            categorySpending.put(budget.getCategory(), BigDecimal.ZERO);
+        }
+        
+        // Sum up spending by category
+        for (Transaction transaction : transactions) {
+            if ("out".equals(transaction.getType())) {
+                String category = transaction.getCategory();
+                BigDecimal amount = transaction.getAmount();
+                
+                categorySpending.put(
+                    category,
+                    categorySpending.getOrDefault(category, BigDecimal.ZERO).add(amount)
+                );
+            }
+        }
+        
+        return categorySpending;
+    }
+
+    /**
+     * Determine the start date based on budget period type and current date
+     */
+    private LocalDate getStartDateForBudget(Budget budget) {
+        if ("monthly".equals(budget.getPeriodType())) {
+            // Current month
+            YearMonth currentMonth = YearMonth.now();
+            return currentMonth.atDay(1);
+        } else {
+            // Current year
+            return LocalDate.now().withDayOfYear(1);
+        }
+    }
+
+    /**
+     * Calculate the earliest start date needed for all budgets
+     * (in case they have different period types)
+     */
+    private LocalDate calculateStartDate(List<Budget> budgets) {
+        LocalDate earliest = LocalDate.now();
+
+        for (Budget budget : budgets) {
+            LocalDate budgetStart = getStartDateForBudget(budget);
+            if (budgetStart.isBefore(earliest)) {
+                earliest = budgetStart;
+            }
+        }
+
+        return earliest;
     }
 }

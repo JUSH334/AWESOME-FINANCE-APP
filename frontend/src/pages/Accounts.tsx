@@ -363,14 +363,7 @@ export default function AccountsPage() {
       {/* ---------- Accounts ---------- */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold"></h2>
-          <button
-            onClick={() => navigate('/add-data', { state: { activeTab: 'account' } })}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Account
-          </button>
+          <h2 className="text-xl font-semibold">Accounts</h2>
         </div>
 
         {accounts.length === 0 ? (
@@ -481,7 +474,7 @@ export default function AccountsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Transaction
+              Add Data
             </button>
           </div>
         </div>

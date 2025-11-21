@@ -39,34 +39,23 @@ export default function Header({ title, subtitle, showWelcome = false }: HeaderP
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
       <div>
-        {showWelcome && (
-          <p className="text-slate-500 text-sm">
-            Welcome back
-            {user ? `, ${user.name ?? user.email}` : "!"}
-          </p>
-        )}
         <h1 className="text-2xl md:text-3xl font-semibold">
           {title || "Dashboard"}
         </h1>
         {subtitle && (
           <p className="text-slate-600 text-sm mt-1">{subtitle}</p>
         )}
+          {showWelcome && (
+          <p className="text-slate-500 text-sm">
+            Welcome back
+            {user ? `, ${user.name ?? user.email}` : "!"}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Search 
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 cursor-pointer hover:text-slate-600 transition-colors" 
-            onClick={handleSearch}
-          />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Search transactions…"
-            className="pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-            disabled={isSearching}
-          />
+
         </div>
         <button
           onClick={handleSignOut}

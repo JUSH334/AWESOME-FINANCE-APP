@@ -16,7 +16,7 @@ export default function AppShell() {
       showWelcome: true
     };
     if (path === "/accounts") return { 
-      title: "Accounts", 
+      title: "Accounts & Transactions", 
       subtitle: "View and manage your accounts and transactions",
       showWelcome: false
     };
@@ -36,7 +36,7 @@ export default function AppShell() {
       showWelcome: false
     };
     if (path === "/profile") return { 
-      title: "Settings", 
+      title: "Profile Settings", 
       subtitle: "Manage your account settings and preferences",
       showWelcome: false
     };
