@@ -1,8 +1,21 @@
-﻿﻿// frontend/src/components/Sidebar.tsx
-import { NavLink, Link } from "react-router-dom";
+﻿﻿import { NavLink, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Wallet, PiggyBank, User, Brain } from "lucide-react";
+import { useMemo } from "react";
 
 export default function Sidebar() {
+  const location = useLocation();
+
+  const pageTitle = useMemo(() => {
+    const path = location.pathname;
+    if (path === "/dashboard") return "Dashboard";
+    if (path === "/accounts") return "Accounts";
+    if (path === "/budgets") return "Budgets";
+    if (path === "/ai-insights") return "AI Insights";
+    if (path === "/add-data") return "Add Data";
+    if (path === "/profile") return "Profile";
+    return "Dashboard";
+  }, [location.pathname]);
+
   return (
     <aside className="bg-white rounded-2xl shadow-sm p-4 space-y-6">
       <Link to="/dashboard" className="flex items-center gap-3">
@@ -23,7 +36,7 @@ export default function Sidebar() {
         </div>
         <div>
           <h2 className="text-l font-bold text-slate-800 leading-tight">Awesome Finance</h2>
-          <p className="text-slate-500 text-sm leading-tight">Dashboard</p>
+          <p className="text-slate-500 text-sm leading-tight">{pageTitle}</p>
         </div>
       </Link>
 

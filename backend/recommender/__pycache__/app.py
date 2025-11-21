@@ -674,36 +674,6 @@ async def get_recommendations(data: UserFinancialData):
         except Exception as e:
             print(f"[LLM] Enhancement failed (non-critical): {e}")
         
-        # Print results
-        print("\n" + "="*80)
-        print("📊 FINANCIAL INSIGHTS SUMMARY")
-        print("="*80)
-        print(f"Overall Score: {score}/100")
-        print(f"Total Balance: ${summary['totalBalance']:.2f}")
-        print(f"Monthly Expenses: ${summary['monthlyExpenses']:.2f}")
-        print(f"Savings Rate: {summary['savingsRate']:.1f}%")
-        print(f"Spending Trend: {summary['spendingTrend']}")
-        
-        print(f"\n💡 INSIGHTS ({len(insights)} total):")
-        for i, insight in enumerate(insights, 1):
-            print(f"\n  {i}. [{insight.type.upper()}] {insight.title}")
-            print(f"     Message: {insight.message}")
-            if insight.suggestedAction:
-                print(f"     Action: {insight.suggestedAction}")
-        
-        print(f"\n🔮 PREDICTIONS ({len(predictions)} total):")
-        for i, pred in enumerate(predictions, 1):
-            print(f"\n  {i}. {pred.metric}")
-            print(f"     Current: ${pred.currentValue:.2f} → Predicted: ${pred.predictedValue:.2f}")
-            print(f"     Change: ${pred.change:.2f} ({pred.changePercent:.1f}%)")
-            print(f"     Confidence: {pred.confidence*100:.0f}%")
-        
-        print(f"\n📋 RECOMMENDATIONS ({len(recommendations)} total):")
-        for i, rec in enumerate(recommendations, 1):
-            print(f"  {i}. {rec}")
-        
-        print("\n" + "="*80 + "\n")
-        
         return RecommendationResponse(
             insights=insights,
             predictions=predictions,

@@ -194,22 +194,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-slate-600 text-sm">Manage your account settings and preferences</p>
-        </div>
-        <button
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 transition-colors text-sm font-medium"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
-      </div>
+  
 
       {/* Message Banner */}
       {message && (

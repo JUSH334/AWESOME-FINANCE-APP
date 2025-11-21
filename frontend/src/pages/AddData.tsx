@@ -21,14 +21,6 @@ export default function AddDataPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Add Financial Data</h1>
-        <p className="text-slate-600 text-sm mt-1">
-          Add accounts and transactions manually or upload bank statements
-        </p>
-      </div>
-
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200">
         <button
