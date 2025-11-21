@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,17 +27,20 @@ public class UserService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Autowired
     public UserService(
         UserRepository userRepository,
         AccountRepository accountRepository,
-        TransactionRepository transactionRepository
+        TransactionRepository transactionRepository,
+        EmailService emailService
     ) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.emailService = emailService;
     }
 
     // ==================== PROFILE MANAGEMENT ====================
@@ -45,6 +49,9 @@ public class UserService {
     public User updateProfile(Long userId, String firstName, String lastName, String email) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        boolean emailChanged = false;
+        String oldEmail = user.getEmail();
 
         // Update fields if provided
         if (firstName != null && !firstName.trim().isEmpty()) {
@@ -68,11 +75,35 @@ public class UserService {
                 throw new IllegalArgumentException("Email is already registered to another account");
             }
             
+            // Mark that email changed
+            emailChanged = true;
             user.setEmail(email.trim());
+            
+            // Reset email verification status
+            user.setIsEmailVerified(false);
+            
+            // Generate new verification token
+            String verificationToken = UUID.randomUUID().toString();
+            user.setVerificationToken(verificationToken);
+            
+            // Send verification email to NEW email address
+            String fullName = buildFullName(user.getFirstName(), user.getLastName());
+            emailService.sendVerificationEmail(
+                email.trim(), 
+                fullName.isEmpty() ? user.getUsername() : fullName, 
+                verificationToken
+            );
         }
         
         user.setUpdatedAt(LocalDateTime.now());
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        
+        // Log the email change for security
+        if (emailChanged) {
+            System.out.println("Email changed for user " + userId + " from " + oldEmail + " to " + email);
+        }
+        
+        return savedUser;
     }
 
     @Transactional
@@ -137,6 +168,7 @@ public class UserService {
         profile.put("email", user.getEmail());
         profile.put("firstName", user.getFirstName());
         profile.put("lastName", user.getLastName());
+        profile.put("isEmailVerified", user.getIsEmailVerified());
         profile.put("createdAt", user.getCreatedAt());
         data.put("profile", profile);
 
@@ -185,6 +217,22 @@ public class UserService {
         data.put("metadata", metadata);
 
         return data;
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    private String buildFullName(String firstName, String lastName) {
+        StringBuilder name = new StringBuilder();
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            name.append(firstName.trim());
+        }
+        if (lastName != null && !lastName.trim().isEmpty()) {
+            if (name.length() > 0) {
+                name.append(" ");
+            }
+            name.append(lastName.trim());
+        }
+        return name.toString();
     }
 
     // ==================== LEGACY METHODS ====================

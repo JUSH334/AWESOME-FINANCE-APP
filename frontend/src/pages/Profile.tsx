@@ -69,30 +69,46 @@ export default function ProfilePage() {
   };
 
   const handleProfileSave = async () => {
-    setSaving(true);
-    setMessage(null);
+  setSaving(true);
+  setMessage(null);
+  
+  try {
+    // Check if email is being changed
+    const emailChanged = email !== profileData?.email;
     
-    try {
-      await profileApi.updateProfile({
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        email: email || undefined
-      });
-      
-      // Reload profile to get updated data
-      await loadProfile();
-      
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
-    } catch (error) {
+    await profileApi.updateProfile({
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      email: email || undefined
+    });
+    
+    // Reload profile to get updated data
+    await loadProfile();
+    
+    // Show appropriate message based on whether email changed
+    if (emailChanged) {
       setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to update profile' 
+        type: 'success', 
+        text: 'Profile updated! A verification email has been sent to your new email address. Please verify it before your next login.' 
       });
-    } finally {
-      setSaving(false);
+    } else {
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+    }
+  } catch (error) {
+    setMessage({ 
+      type: 'error', 
+      text: error instanceof Error ? error.message : 'Failed to update profile' 
+    });
+  } finally {
+    setSaving(false);
+    // Don't auto-hide this message since it's important
+    if (email !== profileData?.email) {
+      // Keep the message visible for email changes
+    } else {
       setTimeout(() => setMessage(null), 5000);
     }
-  };
+  }
+};
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {

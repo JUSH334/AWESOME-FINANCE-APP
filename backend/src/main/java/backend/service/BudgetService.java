@@ -156,10 +156,8 @@ public class BudgetService {
     @Transactional
     public void deleteBudget(Long budgetId, Long userId) {
         Budget budget = getBudgetById(budgetId, userId);
-        budget.setIsActive(false);
-        budget.setUpdatedAt(LocalDateTime.now());
-        budgetRepository.save(budget);
-    }
+        budgetRepository.delete(budget); // Hard delete instead of soft delete
+}
 
     @Transactional
     public void recalculateAllBudgets(Long userId) {
