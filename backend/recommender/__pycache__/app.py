@@ -35,7 +35,7 @@ app.add_middleware(
 # ============= CONFIGURATION =============
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral:7b"
-LLM_TIMEOUT = 30.0  # Increased timeout
+LLM_TIMEOUT = 60.0  # Increased timeout
 MAX_TOKENS = 150
 CACHE_SIZE = 128
 
@@ -99,9 +99,10 @@ class FinancialMLModel:
     
     def predict_next_month(self, current_data: Dict) -> Dict:
         avg_expenses = current_data.get('avg_expenses', 0)
-        avg_income = current_data.get('avg_income', 0)
+        avg_income = current_data.get('avg_income', 0)  # This is now current month's income
         latest_expenses = current_data.get('latest_month_expense', avg_expenses)
         
+        # Predict expenses based on trends
         if latest_expenses > avg_expenses * 1.2:
             expense_pred = avg_expenses * 1.1
         elif latest_expenses < avg_expenses * 0.8:
@@ -109,7 +110,11 @@ class FinancialMLModel:
         else:
             expense_pred = avg_expenses
         
-        income_pred = avg_income
+        # Predict income - assume stable income (most realistic for salary)
+        # If user has salary, income typically doesn't change month-to-month
+        income_pred = avg_income  # Next month's income = this month's income
+        
+        # Confidence increases with more data
         confidence = 0.75 if current_data.get('total_months', 0) >= 3 else 0.5
         
         return {
@@ -143,7 +148,7 @@ async def check_ollama_available() -> bool:
 
 async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optional[str]:
     """
-    Fixed Ollama API call with proper error handling
+    Fixed Ollama API call with better error handling and diagnostics
     """
     # Check cache first
     cache_key = get_cache_key(prompt, max_tokens)
@@ -153,8 +158,9 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
     
     try:
         print(f"[LLM] Calling Ollama with model: {OLLAMA_MODEL}")
+        print(f"[LLM] Prompt length: {len(prompt)} chars")
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=LLM_TIMEOUT) as client:
             # Make the request
             response = await client.post(
                 OLLAMA_API_URL,
@@ -163,7 +169,7 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.5,
+                        "temperature": 0.7,  # Slightly higher for more creative responses
                         "num_predict": max_tokens,
                         "top_k": 40,
                         "top_p": 0.9,
@@ -184,21 +190,25 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
                         llm_cache.pop(next(iter(llm_cache)))
                     llm_cache[cache_key] = generated_text
                     
-                    print(f"[LLM Cache MISS] Generated {len(generated_text)} chars")
+                    print(f"[LLM] Success! Generated {len(generated_text)} chars")
                     return generated_text
                 else:
                     print("[LLM] Empty response from model")
                     return None
+            elif response.status_code == 404:
+                print(f"[LLM Error] Model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}")
+                return None
             else:
                 print(f"[LLM Error] Status {response.status_code}")
                 print(f"[LLM Error] Response: {response.text[:200]}")
                 return None
                 
     except asyncio.TimeoutError:
-        print(f"[LLM] Timeout after {LLM_TIMEOUT}s")
+        print(f"[LLM] Timeout after {LLM_TIMEOUT}s - try increasing LLM_TIMEOUT or using a faster model")
         return None
     except httpx.ConnectError as e:
         print(f"[LLM] Connection error: {e}")
+        print("[LLM] Make sure Ollama is running: ollama serve")
         return None
     except Exception as e:
         print(f"[LLM] Error: {type(e).__name__}: {e}")
@@ -530,15 +540,31 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
     """Generate financial predictions"""
     predictions = []
     
+    # Calculate current month's income (last 30 days)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    recent_income = 0
+    
+    for transaction in data.transactions:
+        try:
+            txn_date = datetime.fromisoformat(transaction.date.replace('Z', '+00:00'))
+            if txn_date >= thirty_days_ago and transaction.type == 'in':
+                recent_income += transaction.amount
+        except:
+            pass
+    
+    # If monthlyIncome is provided, use it; otherwise use calculated
+    current_income = data.monthlyIncome if data.monthlyIncome else recent_income
+    
     current_data = {
         'avg_expenses': analysis.get('avg_monthly_expense', 0),
-        'avg_income': data.monthlyIncome or analysis.get('total_income', 0) / max(analysis.get('total_months', 1), 1),
+        'avg_income': current_income,  # Use current month's income
         'latest_month_expense': analysis.get('latest_month_expense', 0),
         'total_months': analysis.get('total_months', 0)
     }
     
     pred = ml_model.predict_next_month(current_data)
     
+    # Expense prediction
     current_expense = analysis.get('latest_month_expense', 0)
     predicted_expense = pred['expenses']
     expense_change = predicted_expense - current_expense
@@ -554,19 +580,24 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
         changePercent=expense_change_pct
     ))
     
-    if data.monthlyIncome:
-        predictions.append(Prediction(
-            metric="Next Month Income",
-            currentValue=data.monthlyIncome,
-            predictedValue=pred['income'],
-            confidence=pred['confidence'],
-            timeframe="next_month",
-            change=0,
-            changePercent=0
-        ))
+    # Income prediction - NOW USING CURRENT MONTH'S INCOME
+    predicted_income = pred['income']
+    income_change = predicted_income - current_income
+    income_change_pct = (income_change / current_income * 100) if current_income > 0 else 0
     
+    predictions.append(Prediction(
+        metric="Next Month Income",
+        currentValue=current_income,  # Current month's actual income
+        predictedValue=predicted_income,  # Predicted next month's income
+        confidence=pred['confidence'],
+        timeframe="next_month",
+        change=income_change,
+        changePercent=income_change_pct
+    ))
+    
+    # Balance prediction
     current_balance = sum(acc.balance for acc in data.accounts)
-    predicted_balance = current_balance + pred['income'] - pred['expenses']
+    predicted_balance = current_balance + predicted_income - predicted_expense
     balance_change = predicted_balance - current_balance
     balance_change_pct = (balance_change / current_balance * 100) if current_balance > 0 else 0
     

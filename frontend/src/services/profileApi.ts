@@ -27,7 +27,6 @@ export interface PasswordChangeData {
 
 export interface FinancialGoalsData {
   savingsGoal?: number;
-  monthlyIncome?: number;
 }
 
 export interface FinancialGoalsResponse {

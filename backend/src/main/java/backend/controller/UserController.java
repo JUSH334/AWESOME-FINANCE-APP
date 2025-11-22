@@ -170,15 +170,13 @@ public class UserController {
             Long userId = getUserIdFromAuth(auth);
             User user = userService.updateFinancialGoals(
                 userId,
-                request.savingsGoal,
-                request.monthlyIncome
+                request.savingsGoal
             );
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Financial goals updated successfully");
             response.put("savingsGoal", user.getSavingsGoal());
-            response.put("monthlyIncome", user.getMonthlyIncome());
             
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -211,8 +209,7 @@ public class UserController {
     // ==================== REQUEST DTOs ====================
     public static class FinancialGoalsRequest {
         public BigDecimal savingsGoal;
-        public BigDecimal monthlyIncome;
-    }
+    }   
 
     public static class ProfileUpdateRequest {
         public String firstName;

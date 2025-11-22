@@ -33,7 +33,7 @@ export default function BudgetsPage() {
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Sort state
+  // Sort states
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
@@ -43,12 +43,15 @@ export default function BudgetsPage() {
   const [periodType, setPeriodType] = useState<'monthly' | 'yearly'>('monthly');
 
   // Calculator state with saved goals
-  const [income, setIncome] = useState(5000);
+  const [income, setIncome] = useState("");
   const [savePct, setSavePct] = useState(20);
-  const [savingsGoal, setSavingsGoal] = useState(12000);
-  const [monthlyIncome, setMonthlyIncome] = useState(5000);
+  const [savingsGoal, setSavingsGoal] = useState("");
+  const [calculatedMonthlyIncome, setCalculatedMonthlyIncome] = useState(0);
   const [hasLoadedGoals, setHasLoadedGoals] = useState(false);
-  const savings = Math.round((income * savePct) / 100);
+  
+  // Calculate savings with safe number handling
+  const getIncomeValue = () => income === "" ? 0 : Number(income);
+  const savings = Math.round((getIncomeValue() * savePct) / 100);
 
   useEffect(() => {
     loadBudgets();
@@ -59,11 +62,12 @@ export default function BudgetsPage() {
     try {
       const goals = await profileApi.getFinancialGoals();
       if (goals.savingsGoal) {
-        setSavingsGoal(Number(goals.savingsGoal));
+        setSavingsGoal(String(goals.savingsGoal));
       }
       if (goals.monthlyIncome) {
-        setMonthlyIncome(Number(goals.monthlyIncome));
-        setIncome(Number(goals.monthlyIncome));
+        const calculatedIncome = Number(goals.monthlyIncome);
+        setCalculatedMonthlyIncome(calculatedIncome);
+        setIncome(String(calculatedIncome));
       }
       setHasLoadedGoals(true);
     } catch (error) {
@@ -77,12 +81,11 @@ export default function BudgetsPage() {
     setMessage(null);
 
     try {
+      const goalValue = savingsGoal === "" ? 0 : Number(savingsGoal);
       await profileApi.updateFinancialGoals({
-        savingsGoal,
-        monthlyIncome: income
+        savingsGoal: goalValue
       });
-      setMessage({ type: 'success', text: 'Financial goals saved successfully!' });
-      setMonthlyIncome(income);
+      setMessage({ type: 'success', text: 'Savings goal saved successfully!' });
     } catch (error) {
       setMessage({ 
         type: 'error', 
@@ -461,16 +464,15 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      {/* Calculator Tab */}
+          {/* Calculator Tab - COMPLETE SECTION */}
       {activeTab === "calculator" && (
-        <div className="rounded-2xl bg-white border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Savings Calculator & Goals</h3>
-          <p className="text-sm text-slate-600 mb-6">
-            Set your financial goals and calculate how much you can save
-          </p>
-
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Inputs */}
+          <div className="rounded-2xl bg-white border border-slate-200 p-6 h-fit">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">Financial Goals</h3>
+            
+            <div className="space-y-6">
+              {/* Monthly Income Input */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
                   Monthly Income ($)
@@ -478,12 +480,17 @@ export default function BudgetsPage() {
                 <input
                   type="number"
                   value={income}
-                  onChange={(e) => setIncome(Number(e.target.value) || 0)}
+                  onChange={(e) => setIncome(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   className="w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   placeholder="5000"
                 />
+                <p className="text-xs text-slate-500">
+                  💡 From last 30 days: {formatCurrency(calculatedMonthlyIncome)}
+                </p>
               </div>
 
+              {/* Savings Goal Input */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
                   Savings Goal ($)
@@ -491,109 +498,161 @@ export default function BudgetsPage() {
                 <input
                   type="number"
                   value={savingsGoal}
-                  onChange={(e) => setSavingsGoal(Number(e.target.value) || 0)}
+                  onChange={(e) => setSavingsGoal(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   className="w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   placeholder="12000"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Savings Percentage (%)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={savePct}
-                  onChange={(e) => setSavePct(Number(e.target.value))}
-                  className="flex-1"
-                />
-                <input
-                  type="number"
-                  value={savePct}
-                  onChange={(e) => setSavePct(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                  className="w-20 rounded-xl border border-slate-300 px-3 py-2 text-center focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                />
+              {/* Savings Percentage Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Savings Percentage
+                  </label>
+                  <span className="text-2xl font-bold text-emerald-600">
+                    {savePct}%
+                  </span>
+                </div>
+                
+                {/* Custom styled slider with green fill and knob */}
+                <div className="relative pt-2 pb-2">
+                  <div className="h-2 bg-slate-200 rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-200"
+                      style={{ width: `${savePct}%` }}
+                    />
+                  </div>
+                  {/* Slider knob */}
+                  <div 
+                    className="absolute top-0 w-6 h-6 bg-white border-2 border-emerald-600 rounded-full shadow-md transition-all duration-200 pointer-events-none"
+                    style={{ left: `calc(${savePct}% - 12px)` }}
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={savePct}
+                    onChange={(e) => setSavePct(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-2 opacity-0 cursor-pointer"
+                  />
+                </div>
+                
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>0%</span>
+                  <span>25%</span>
+                  <span>50%</span>
+                  <span>75%</span>
+                  <span>100%</span>
+                </div>
               </div>
+
+              {/* Save Button */}
+              <button
+                onClick={handleSaveFinancialGoals}
+                disabled={saving}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Savings Goal
+                  </>
+                )}
+              </button>
             </div>
+          </div>
 
-            {/* Save Goals Button */}
-            <button
-              onClick={handleSaveFinancialGoals}
-              disabled={saving}
-className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Financial Goals
-                </>
-              )}
-            </button>
-
-            <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 p-6">
-              <div className="flex items-center justify-between">
+          {/* Right Column - Results */}
+          <div className="space-y-6">
+            {/* Monthly Savings Card */}
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 p-6">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm text-emerald-700 mb-1">Monthly Savings</p>
-                  <p className="text-3xl font-bold text-emerald-900">{formatCurrency(savings)}</p>
+                  <p className="text-4xl font-bold text-emerald-900">{formatCurrency(savings)}</p>
                 </div>
                 <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center">
                   <PiggyBank className="w-8 h-8 text-white" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-emerald-200">
+              {/* Projection Timeline */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-emerald-200">
                 <div>
-                  <p className="text-xs text-emerald-700">6 Months</p>
+                  <p className="text-xs text-emerald-700 mb-1">6 Months</p>
                   <p className="text-lg font-semibold text-emerald-900">{formatCurrency(savings * 6)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-emerald-700">1 Year</p>
+                  <p className="text-xs text-emerald-700 mb-1">1 Year</p>
                   <p className="text-lg font-semibold text-emerald-900">{formatCurrency(savings * 12)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-emerald-700">5 Years</p>
+                  <p className="text-xs text-emerald-700 mb-1">5 Years</p>
                   <p className="text-lg font-semibold text-emerald-900">{formatCurrency(savings * 60)}</p>
                 </div>
               </div>
-
-              {/* Progress to Goal */}
-              {savingsGoal > 0 && (
-                <div className="mt-6 pt-6 border-t border-emerald-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-emerald-700 font-medium">Progress to Savings Goal</p>
-                    <p className="text-sm text-emerald-900 font-semibold">
-                      {((savings * 12 / savingsGoal) * 100).toFixed(1)}% per year
-                    </p>
-                  </div>
-                  <div className="h-2 bg-emerald-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-600 rounded-full transition-all"
-                      style={{ width: `${Math.min(100, (savings * 12 / savingsGoal) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-emerald-700 mt-2">
-                    {Math.ceil(savingsGoal / (savings * 12))} years to reach your goal of {formatCurrency(savingsGoal)}
-                  </p>
-                </div>
-              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-sm text-slate-600 mb-1">Monthly Spending</p>
-                <p className="text-xl font-semibold text-slate-900">{formatCurrency(income - savings)}</p>
+            {/* Progress to Goal */}
+            {savingsGoal && Number(savingsGoal) > 0 && (
+              <div className="rounded-2xl bg-white border border-slate-200 p-6">
+                <h4 className="text-sm font-medium text-slate-700 mb-4">Progress to Savings Goal</h4>
+                
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-600">Annual savings vs Goal</span>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {((savings * 12 / Number(savingsGoal)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (savings * 12 / Number(savingsGoal)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200">
+                    <p className="text-sm text-slate-600 mb-2">Time to reach goal:</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {savings > 0 
+                        ? `${Math.ceil(Number(savingsGoal) / (savings * 12))} years`
+                        : 'N/A'
+                      }
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-sm text-slate-600 mb-1">Savings Rate</p>
-                <p className="text-xl font-semibold text-slate-900">{savePct}%</p>
+            )}
+          </div>
+          
+          {/* Budget Breakdown - Full Width Bottom */}
+          <div className="lg:col-span-2">
+            <div className="rounded-2xl bg-white border border-slate-200 p-6">
+              <h4 className="text-sm font-medium text-slate-700 mb-4">Monthly Budget Breakdown</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                  <span className="text-sm text-slate-700">Savings</span>
+                  <span className="text-lg font-semibold text-emerald-700">{formatCurrency(savings)}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                  <span className="text-sm text-slate-700">Available to Spend</span>
+                  <span className="text-lg font-semibold text-slate-700">{formatCurrency(getIncomeValue() - savings)}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                  <span className="text-sm text-slate-700">Savings Rate</span>
+                  <span className="text-lg font-semibold text-blue-700">{savePct}%</span>
+                </div>
               </div>
             </div>
           </div>
@@ -640,6 +699,7 @@ className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-60
                   min="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   required
                   placeholder="1000.00"
                   className="w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"

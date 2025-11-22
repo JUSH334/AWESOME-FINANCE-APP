@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -140,7 +141,7 @@ public class UserService {
     // ==================== SAVINGS GOAL & INCOME ====================
 
     @Transactional
-    public User updateFinancialGoals(Long userId, BigDecimal savingsGoal, BigDecimal monthlyIncome) {
+    public User updateFinancialGoals(Long userId, BigDecimal savingsGoal) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -149,13 +150,6 @@ public class UserService {
                 throw new IllegalArgumentException("Savings goal cannot be negative");
             }
             user.setSavingsGoal(savingsGoal);
-        }
-
-        if (monthlyIncome != null) {
-            if (monthlyIncome.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Monthly income cannot be negative");
-            }
-            user.setMonthlyIncome(monthlyIncome);
         }
 
         user.setUpdatedAt(LocalDateTime.now());
@@ -167,12 +161,27 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        // Calculate monthly income from last 30 days of transactions
+        BigDecimal monthlyIncome = calculateMonthlyIncome(userId);
+
         Map<String, Object> goals = new HashMap<>();
         goals.put("savingsGoal", user.getSavingsGoal() != null ? user.getSavingsGoal() : BigDecimal.ZERO);
-        goals.put("monthlyIncome", user.getMonthlyIncome() != null ? user.getMonthlyIncome() : BigDecimal.ZERO);
+        goals.put("monthlyIncome", monthlyIncome);
         
         return goals;
     }
+
+    private BigDecimal calculateMonthlyIncome(Long userId) {
+        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
+        List<Transaction> transactions = transactionRepository.findByUserIdAndTransactionDateBetween(
+            userId, thirtyDaysAgo, LocalDate.now()
+    );
+
+        return transactions.stream()
+            .filter(t -> "in".equals(t.getType()))
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+}
 
     @Transactional(readOnly = true)
     public Map<String, Object> exportUserData(Long userId, String format) {
@@ -189,7 +198,6 @@ public class UserService {
         profile.put("lastName", user.getLastName());
         profile.put("isEmailVerified", user.getIsEmailVerified());
         profile.put("savingsGoal", user.getSavingsGoal());
-        profile.put("monthlyIncome", user.getMonthlyIncome());
         profile.put("createdAt", user.getCreatedAt());
         data.put("profile", profile);
 

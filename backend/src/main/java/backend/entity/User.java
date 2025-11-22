@@ -52,9 +52,6 @@ public class User {
     @Column(name = "savings_goal", precision = 15, scale = 2)
     private BigDecimal savingsGoal;
 
-    @Column(name = "monthly_income", precision = 15, scale = 2)
-    private BigDecimal monthlyIncome;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -103,9 +100,6 @@ public class User {
 
     public BigDecimal getSavingsGoal() { return savingsGoal; }
     public void setSavingsGoal(BigDecimal savingsGoal) { this.savingsGoal = savingsGoal; }
-
-    public BigDecimal getMonthlyIncome() { return monthlyIncome; }
-    public void setMonthlyIncome(BigDecimal monthlyIncome) { this.monthlyIncome = monthlyIncome; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
