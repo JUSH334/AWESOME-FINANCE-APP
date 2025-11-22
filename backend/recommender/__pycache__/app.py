@@ -1,4 +1,4 @@
-# backend/recommender/app.py - FIXED VERSION
+# backend/recommender/app.py - ENHANCED WITH DYNAMIC LLM PROCESSING
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,8 +35,8 @@ app.add_middleware(
 # ============= CONFIGURATION =============
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral:7b"
-LLM_TIMEOUT = 60.0  # Increased timeout
-MAX_TOKENS = 150
+LLM_TIMEOUT = 60.0
+MAX_TOKENS = 300  # Increased from 150 to allow longer responses
 CACHE_SIZE = 128
 
 # ============= DATA MODELS =============
@@ -99,10 +99,9 @@ class FinancialMLModel:
     
     def predict_next_month(self, current_data: Dict) -> Dict:
         avg_expenses = current_data.get('avg_expenses', 0)
-        avg_income = current_data.get('avg_income', 0)  # This is now current month's income
+        avg_income = current_data.get('avg_income', 0)
         latest_expenses = current_data.get('latest_month_expense', avg_expenses)
         
-        # Predict expenses based on trends
         if latest_expenses > avg_expenses * 1.2:
             expense_pred = avg_expenses * 1.1
         elif latest_expenses < avg_expenses * 0.8:
@@ -110,11 +109,7 @@ class FinancialMLModel:
         else:
             expense_pred = avg_expenses
         
-        # Predict income - assume stable income (most realistic for salary)
-        # If user has salary, income typically doesn't change month-to-month
-        income_pred = avg_income  # Next month's income = this month's income
-        
-        # Confidence increases with more data
+        income_pred = avg_income
         confidence = 0.75 if current_data.get('total_months', 0) >= 3 else 0.5
         
         return {
@@ -127,30 +122,22 @@ ml_model = FinancialMLModel()
 
 # ============= OLLAMA INTEGRATION =============
 
-# In-memory cache for LLM responses
 llm_cache = {}
 
 def get_cache_key(prompt: str, max_tokens: int) -> str:
-    """Generate cache key for prompt"""
     content = f"{prompt}:{max_tokens}"
     return hashlib.md5(content.encode()).hexdigest()
 
 async def check_ollama_available() -> bool:
-    """Check if Ollama is running"""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get("http://localhost:11434/api/tags")
-            print(f"[Ollama] Health check: {response.status_code}")
             return response.status_code == 200
     except Exception as e:
         print(f"[Ollama] Health check failed: {e}")
         return False
 
 async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optional[str]:
-    """
-    Fixed Ollama API call with better error handling and diagnostics
-    """
-    # Check cache first
     cache_key = get_cache_key(prompt, max_tokens)
     if cache_key in llm_cache:
         print(f"[LLM Cache HIT] {cache_key[:8]}...")
@@ -158,10 +145,8 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
     
     try:
         print(f"[LLM] Calling Ollama with model: {OLLAMA_MODEL}")
-        print(f"[LLM] Prompt length: {len(prompt)} chars")
         
         async with httpx.AsyncClient(timeout=LLM_TIMEOUT) as client:
-            # Make the request
             response = await client.post(
                 OLLAMA_API_URL,
                 json={
@@ -169,7 +154,7 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.7,  # Slightly higher for more creative responses
+                        "temperature": 0.8,  # Higher for more variety
                         "num_predict": max_tokens,
                         "top_k": 40,
                         "top_p": 0.9,
@@ -178,135 +163,102 @@ async def _call_llm_generate(prompt: str, max_tokens: int = MAX_TOKENS) -> Optio
                 timeout=LLM_TIMEOUT
             )
             
-            print(f"[LLM] Response status: {response.status_code}")
-            
             if response.status_code == 200:
                 result = response.json()
                 generated_text = result.get("response", "").strip()
                 
                 if generated_text:
-                    # Cache the result
                     if len(llm_cache) >= CACHE_SIZE:
                         llm_cache.pop(next(iter(llm_cache)))
                     llm_cache[cache_key] = generated_text
                     
                     print(f"[LLM] Success! Generated {len(generated_text)} chars")
                     return generated_text
-                else:
-                    print("[LLM] Empty response from model")
-                    return None
-            elif response.status_code == 404:
-                print(f"[LLM Error] Model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}")
-                return None
             else:
-                print(f"[LLM Error] Status {response.status_code}")
-                print(f"[LLM Error] Response: {response.text[:200]}")
-                return None
+                print(f"[LLM Error] Status {response.status_code}: {response.text[:200]}")
                 
-    except asyncio.TimeoutError:
-        print(f"[LLM] Timeout after {LLM_TIMEOUT}s - try increasing LLM_TIMEOUT or using a faster model")
-        return None
-    except httpx.ConnectError as e:
-        print(f"[LLM] Connection error: {e}")
-        print("[LLM] Make sure Ollama is running: ollama serve")
-        return None
     except Exception as e:
         print(f"[LLM] Error: {type(e).__name__}: {e}")
-        return None
+    
+    return None
 
-async def enhance_insight_with_llm(insight: Insight, summary: Dict) -> Insight:
-    """
-    Enhanced insight with LLM - simplified version
-    """
+async def generate_unique_insight(insight_type: str, category: str, title: str, 
+                                  base_message: str, financial_context: Dict) -> Insight:
+    """Generate a unique, LLM-enhanced insight"""
     try:
-        prompt = f"""Make this concise and actionable (under 100 words):
-Title: {insight.title}
-Current message: {insight.message}
+        prompt = f"""You are a financial advisor providing personalized insights.
+Generate a unique, actionable financial insight based on this information:
 
-Format as: IMPROVED_MESSAGE: [message here]"""
+Type: {insight_type}
+Category: {category}
+Title: {title}
+Base Context: {base_message}
+Financial Data: {json.dumps(financial_context, default=str)}
 
-        gen = await _call_llm_generate(prompt, max_tokens=100)
-        if not gen:
-            return insight
+Create a concise, personalized message (max 50 words) that is:
+- Specific to their situation
+- Actionable and practical
+- Different from generic financial advice
+- Written in first or second person
+
+Format: MESSAGE: [your unique message here]"""
         
-        # Extract improved message
-        if "IMPROVED_MESSAGE:" in gen:
-            new_message = gen.split("IMPROVED_MESSAGE:")[-1].strip()[:300]
+        gen = await _call_llm_generate(prompt, max_tokens=200)
+        
+        if gen and "MESSAGE:" in gen:
+            message = gen.split("MESSAGE:")[-1].strip()[:300]
         else:
-            new_message = gen.strip()[:300]
+            message = base_message
         
         return Insight(
-            type=insight.type,
-            category=insight.category,
-            title=insight.title,
-            message=new_message if new_message else insight.message,
-            priority=insight.priority,
-            actionable=insight.actionable,
-            suggestedAction=insight.suggestedAction
+            type=insight_type,
+            category=category,
+            title=title,
+            message=message if message else base_message,
+            priority=5 if insight_type == "warning" else (3 if insight_type == "info" else 2),
+            actionable=True,
+            suggestedAction=None
         )
     except Exception as e:
-        print(f"[LLM] Error enhancing insight: {e}")
-        return insight
+        print(f"[LLM] Error generating insight: {e}")
+        return Insight(
+            type=insight_type,
+            category=category,
+            title=title,
+            message=base_message,
+            priority=3,
+            actionable=True,
+            suggestedAction=None
+        )
 
-async def enhance_recommendation_with_llm(rec: str, summary: Dict) -> str:
-    """Enhanced recommendation with LLM"""
+async def generate_unique_recommendation(recommendation_context: str, financial_data: Dict) -> str:
+    """Generate a unique, LLM-enhanced recommendation"""
     try:
-        prompt = f"""Make this tip more specific and actionable (under 50 words):
-{rec}"""
+        prompt = f"""You are a financial advisor providing personalized recommendations.
+Generate ONE unique, specific financial recommendation based on:
 
-        gen = await _call_llm_generate(prompt, max_tokens=60)
-        if not gen:
-            return rec
+Context: {recommendation_context}
+Financial Snapshot: {json.dumps(financial_data, default=str)}
+
+Create a practical, actionable recommendation that:
+- Is specific to their financial situation
+- Provides clear steps or direction
+- Is 1-2 sentences max
+- Avoids generic advice
+
+Format: RECOMMENDATION: [your unique recommendation here]"""
         
-        improved = gen.strip()[:200]
-        return improved if improved else rec
+        gen = await _call_llm_generate(prompt, max_tokens=100)
+        
+        if gen and "RECOMMENDATION:" in gen:
+            recommendation = gen.split("RECOMMENDATION:")[-1].strip()[:200]
+        else:
+            recommendation = recommendation_context
+        
+        return recommendation if recommendation else recommendation_context
     except Exception as e:
-        print(f"[LLM] Error enhancing recommendation: {e}")
-        return rec
-
-# ============= PARALLEL LLM PROCESSING =============
-
-async def enhance_insights_parallel(insights: List[Insight], summary: Dict, max_enhance: int = 2) -> List[Insight]:
-    """Enhance top insights in parallel"""
-    if not insights:
-        return insights
-    
-    to_enhance = insights[:max_enhance]
-    rest = insights[max_enhance:]
-    
-    tasks = [enhance_insight_with_llm(ins, summary) for ins in to_enhance]
-    enhanced = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    result = []
-    for i, item in enumerate(enhanced):
-        if isinstance(item, Insight):
-            result.append(item)
-        else:
-            print(f"[LLM] Error enhancing insight {i}: {item}")
-            result.append(to_enhance[i])
-    
-    return result + rest
-
-async def enhance_recommendations_parallel(recommendations: List[str], summary: Dict, max_enhance: int = 2) -> List[str]:
-    """Enhance top recommendations in parallel"""
-    if not recommendations:
-        return recommendations
-    
-    to_enhance = recommendations[:max_enhance]
-    rest = recommendations[max_enhance:]
-    
-    tasks = [enhance_recommendation_with_llm(rec, summary) for rec in to_enhance]
-    enhanced = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    result = []
-    for i, item in enumerate(enhanced):
-        if isinstance(item, str):
-            result.append(item)
-        else:
-            print(f"[LLM] Error enhancing recommendation {i}: {item}")
-            result.append(to_enhance[i])
-    
-    return result + rest
+        print(f"[LLM] Error generating recommendation: {e}")
+        return recommendation_context
 
 # ============= ANALYSIS FUNCTIONS =============
 
@@ -380,7 +332,6 @@ def analyze_spending_patterns(transactions: List[Transaction]) -> Dict:
     }
 
 def calculate_financial_health_score(data: UserFinancialData, analysis: Dict) -> int:
-    """Calculate overall financial health score (0-100)"""
     score = 40
     total_balance = sum(acc.balance for acc in data.accounts)
     total_income = analysis.get('total_income', 0)
@@ -406,133 +357,142 @@ def calculate_financial_health_score(data: UserFinancialData, analysis: Dict) ->
     
     return min(100, max(0, int(score)))
 
-def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
-    """Generate actionable insights"""
+async def generate_insights(data: UserFinancialData, analysis: Dict) -> List[Insight]:
+    """Generate LLM-enhanced insights"""
     insights = []
     
     total_balance = sum(acc.balance for acc in data.accounts)
     total_income = analysis.get('total_income', 0)
     total_expenses = analysis.get('total_expenses', 0)
     
+    # Unusual spending
     if analysis.get('is_unusual_spending'):
-        insights.append(Insight(
-            type="warning",
-            category="spending",
-            title="Unusual Spending Detected",
-            message=f"Your spending this month is ${analysis['latest_month_expense']:.2f}, significantly higher than your average of ${analysis['avg_monthly_expense']:.2f}",
-            priority=5,
-            actionable=True,
-            suggestedAction="Review your recent transactions and identify areas where you can cut back"
-        ))
+        context = {
+            'latest_spending': analysis['latest_month_expense'],
+            'average_spending': analysis['avg_monthly_expense'],
+            'difference': analysis['latest_month_expense'] - analysis['avg_monthly_expense']
+        }
+        insight = await generate_unique_insight(
+            'warning', 'spending', 'Unusual Spending Detected',
+            f"Your spending this month (${analysis['latest_month_expense']:.2f}) is unusually high compared to your average (${analysis['avg_monthly_expense']:.2f})",
+            context
+        )
+        insights.append(insight)
     
+    # Top spending category
     top_category = analysis.get('top_category')
     if top_category:
         category_totals = analysis.get('category_totals', {})
         top_amount = category_totals.get(top_category, 0)
-        
-        insights.append(Insight(
-            type="info",
-            category="spending",
-            title=f"Highest Spending: {top_category}",
-            message=f"You've spent ${top_amount:.2f} on {top_category}",
-            priority=3,
-            actionable=True,
-            suggestedAction=f"Consider setting a monthly budget limit for {top_category}"
-        ))
+        context = {
+            'category': top_category,
+            'amount_spent': top_amount,
+            'total_expenses': total_expenses
+        }
+        insight = await generate_unique_insight(
+            'info', 'spending', f'Spending Pattern: {top_category}',
+            f"You've spent ${top_amount:.2f} on {top_category}. Consider budgeting this category.",
+            context
+        )
+        insights.append(insight)
+    
+    # Balance warnings
+    context_balance = {'current_balance': total_balance, 'emergency_fund_target': analysis.get('avg_monthly_expense', 0) * 3}
     
     if total_balance < 0:
-        insights.append(Insight(
-            type="warning",
-            category="balance",
-            title="⚠️ Negative Balance Alert",
-            message="Your total account balance is negative. This requires immediate attention.",
-            priority=5,
-            actionable=True,
-            suggestedAction="Prioritize paying off debts and avoid new expenses until balance is positive"
-        ))
+        insight = await generate_unique_insight(
+            'warning', 'balance', '⚠️ Negative Balance Alert',
+            "Your total account balance is negative. This requires immediate attention.",
+            context_balance
+        )
+        insights.append(insight)
     elif total_balance < 500:
-        insights.append(Insight(
-            type="warning",
-            category="emergency_fund",
-            title="Low Emergency Fund",
-            message="Your balance is critically low. An unexpected expense could cause financial stress.",
-            priority=4,
-            actionable=True,
-            suggestedAction="Try to save at least $1,000 for emergencies, then work toward 3-6 months of expenses"
-        ))
+        insight = await generate_unique_insight(
+            'warning', 'emergency_fund', 'Low Emergency Fund',
+            "Your balance is critically low. An unexpected expense could cause financial stress.",
+            context_balance
+        )
+        insights.append(insight)
     elif total_balance < analysis.get('avg_monthly_expense', 0) * 3:
-        insights.append(Insight(
-            type="warning",
-            category="emergency_fund",
-            title="Build Your Emergency Fund",
-            message="Financial experts recommend having 3-6 months of expenses saved for emergencies.",
-            priority=3,
-            actionable=True,
-            suggestedAction=f"Aim to save ${analysis.get('avg_monthly_expense', 0) * 3:.2f} for a 3-month emergency fund"
-        ))
+        insight = await generate_unique_insight(
+            'warning', 'emergency_fund', 'Build Your Emergency Fund',
+            "Financial experts recommend having 3-6 months of expenses saved for emergencies.",
+            context_balance
+        )
+        insights.append(insight)
     else:
-        insights.append(Insight(
-            type="success",
-            category="emergency_fund",
-            title="✓ Strong Emergency Fund",
-            message="Great job! You have a healthy emergency fund that can cover unexpected expenses.",
-            priority=2,
-            actionable=False
-        ))
+        insight = await generate_unique_insight(
+            'success', 'emergency_fund', '✓ Strong Emergency Fund',
+            "Great job! You have a healthy emergency fund that can cover unexpected expenses.",
+            context_balance
+        )
+        insights.append(insight)
     
-    if data.savingsGoal and data.savingsGoal > 0:
-        progress = (total_balance / data.savingsGoal) * 100
+    # Savings goal progress - use real user savings goal
+    savings_goal = data.savingsGoal if data.savingsGoal and data.savingsGoal > 0 else None
+    
+    if savings_goal:
+        progress = (total_balance / savings_goal) * 100
+        remaining = savings_goal - total_balance
+        context_goal = {
+            'current_savings': total_balance,
+            'goal': savings_goal,
+            'progress_percent': progress,
+            'remaining_amount': remaining
+        }
+        
         if progress >= 100:
-            insights.append(Insight(
-                type="success",
-                category="goals",
-                title="🎉 Savings Goal Achieved!",
-                message=f"Congratulations! You've reached your savings goal of ${data.savingsGoal:.2f}",
-                priority=5,
-                actionable=False
-            ))
+            insight = await generate_unique_insight(
+                'success', 'goals', '🎉 Savings Goal Achieved!',
+                f"Congratulations! You've reached your personal savings goal of ${savings_goal:.2f}",
+                context_goal
+            )
+            insights.append(insight)
         elif progress >= 75:
-            insights.append(Insight(
-                type="success",
-                category="goals",
-                title="Almost There!",
-                message=f"You're at {progress:.1f}% of your savings goal. Keep up the great work!",
-                priority=3,
-                actionable=True,
-                suggestedAction=f"Just ${data.savingsGoal - total_balance:.2f} more to reach your goal!"
-            ))
+            insight = await generate_unique_insight(
+                'success', 'goals', 'Almost There!',
+                f"You're at {progress:.1f}% of your personal goal (${savings_goal:.2f}). Just ${remaining:.2f} more to go!",
+                context_goal
+            )
+            insights.append(insight)
+        else:
+            insight = await generate_unique_insight(
+                'info', 'goals', 'Working Towards Your Goal',
+                f"You've saved ${total_balance:.2f} toward your goal of ${savings_goal:.2f}. That's {progress:.1f}% of the way there!",
+                context_goal
+            )
+            insights.append(insight)
     
+    # Savings rate
     if total_income > 0:
         savings_rate = ((total_income - total_expenses) / total_income) * 100
+        context_rate = {
+            'income': total_income,
+            'expenses': total_expenses,
+            'savings_rate': savings_rate
+        }
+        
         if savings_rate < 0:
-            insights.append(Insight(
-                type="warning",
-                category="savings",
-                title="⚠️ Spending More Than Earning",
-                message=f"You're spending ${total_expenses - total_income:.2f} more than you earn.",
-                priority=5,
-                actionable=True,
-                suggestedAction="Create a budget to reduce expenses and increase income immediately"
-            ))
+            insight = await generate_unique_insight(
+                'warning', 'savings', '⚠️ Spending More Than Earning',
+                f"You're spending ${total_expenses - total_income:.2f} more than you earn.",
+                context_rate
+            )
+            insights.append(insight)
         elif savings_rate < 10:
-            insights.append(Insight(
-                type="warning",
-                category="savings",
-                title="Low Savings Rate",
-                message=f"You're only saving {savings_rate:.1f}% of your income. This may not be enough for long-term goals.",
-                priority=4,
-                actionable=True,
-                suggestedAction="Aim to save at least 20% of your income each month using the 50/30/20 rule"
-            ))
+            insight = await generate_unique_insight(
+                'warning', 'savings', 'Low Savings Rate',
+                f"You're only saving {savings_rate:.1f}% of your income. Aim for at least 20%.",
+                context_rate
+            )
+            insights.append(insight)
         elif savings_rate >= 20:
-            insights.append(Insight(
-                type="success",
-                category="savings",
-                title="💰 Excellent Savings Rate!",
-                message=f"You're saving {savings_rate:.1f}% of your income - that's fantastic!",
-                priority=2,
-                actionable=False
-            ))
+            insight = await generate_unique_insight(
+                'success', 'savings', '💰 Excellent Savings Rate!',
+                f"You're saving {savings_rate:.1f}% of your income - that's fantastic!",
+                context_rate
+            )
+            insights.append(insight)
     
     return sorted(insights, key=lambda x: x.priority, reverse=True)
 
@@ -540,7 +500,6 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
     """Generate financial predictions"""
     predictions = []
     
-    # Calculate current month's income (last 30 days)
     thirty_days_ago = datetime.now() - timedelta(days=30)
     recent_income = 0
     
@@ -552,12 +511,11 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
         except:
             pass
     
-    # If monthlyIncome is provided, use it; otherwise use calculated
     current_income = data.monthlyIncome if data.monthlyIncome else recent_income
     
     current_data = {
         'avg_expenses': analysis.get('avg_monthly_expense', 0),
-        'avg_income': current_income,  # Use current month's income
+        'avg_income': current_income,
         'latest_month_expense': analysis.get('latest_month_expense', 0),
         'total_months': analysis.get('total_months', 0)
     }
@@ -580,15 +538,15 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
         changePercent=expense_change_pct
     ))
     
-    # Income prediction - NOW USING CURRENT MONTH'S INCOME
+    # Income prediction
     predicted_income = pred['income']
     income_change = predicted_income - current_income
     income_change_pct = (income_change / current_income * 100) if current_income > 0 else 0
     
     predictions.append(Prediction(
         metric="Next Month Income",
-        currentValue=current_income,  # Current month's actual income
-        predictedValue=predicted_income,  # Predicted next month's income
+        currentValue=current_income,
+        predictedValue=predicted_income,
         confidence=pred['confidence'],
         timeframe="next_month",
         change=income_change,
@@ -613,29 +571,84 @@ def generate_predictions(data: UserFinancialData, analysis: Dict) -> List[Predic
     
     return predictions
 
-def generate_recommendations(insights: List[Insight], score: int, analysis: Dict) -> List[str]:
-    """Generate actionable recommendations"""
+async def generate_recommendations(insights: List[Insight], score: int, analysis: Dict) -> List[str]:
+    """Generate LLM-enhanced recommendations"""
     recs = []
     
-    if score < 40:
-        recs.append("🚨 Focus on financial basics: track all expenses, create a budget, and eliminate unnecessary spending")
-        recs.append("💡 Consider ways to increase income through side gigs, asking for a raise, or freelancing")
-    elif score < 60:
-        recs.append("📊 You're making progress! Focus on building an emergency fund of 3-6 months expenses")
-        recs.append("💰 Review your budget monthly and look for opportunities to save 20% of your income")
-    elif score < 80:
-        recs.append("✅ You're doing well! Consider investing surplus funds in retirement accounts or index funds")
-        recs.append("📈 Explore tax-advantaged savings options to maximize your financial growth")
-    else:
-        recs.append("🌟 Excellent financial health! Consider meeting with a financial advisor to optimize investments")
-        recs.append("🎯 Set ambitious long-term goals like early retirement or major purchases")
+    financial_snapshot = {
+        'health_score': score,
+        'spending_trend': analysis.get('spending_trend'),
+        'total_income': analysis.get('total_income'),
+        'total_expenses': analysis.get('total_expenses')
+    }
     
+    if score < 40:
+        rec = await generate_unique_recommendation(
+            "User has poor financial health. Recommend foundational financial improvements.",
+            financial_snapshot
+        )
+        recs.append(f"🚨 {rec}")
+        
+        rec = await generate_unique_recommendation(
+            "Low income/high expenses ratio. Suggest income improvement or expense reduction.",
+            financial_snapshot
+        )
+        recs.append(f"💡 {rec}")
+    
+    elif score < 60:
+        rec = await generate_unique_recommendation(
+            "Moderate financial health. Recommend building emergency fund and budgeting.",
+            financial_snapshot
+        )
+        recs.append(f"📊 {rec}")
+        
+        rec = await generate_unique_recommendation(
+            "Income exceeds expenses but savings rate is low. Suggest structured savings plan.",
+            financial_snapshot
+        )
+        recs.append(f"💰 {rec}")
+    
+    elif score < 80:
+        rec = await generate_unique_recommendation(
+            "Good financial health. Recommend investment and wealth building strategies.",
+            financial_snapshot
+        )
+        recs.append(f"✅ {rec}")
+        
+        rec = await generate_unique_recommendation(
+            "Solid emergency fund and positive cash flow. Suggest optimization strategies.",
+            financial_snapshot
+        )
+        recs.append(f"📈 {rec}")
+    
+    else:
+        rec = await generate_unique_recommendation(
+            "Excellent financial health. Recommend advanced financial planning and wealth optimization.",
+            financial_snapshot
+        )
+        recs.append(f"🌟 {rec}")
+        
+        rec = await generate_unique_recommendation(
+            "Strong savings and investment potential. Suggest long-term wealth building.",
+            financial_snapshot
+        )
+        recs.append(f"🎯 {rec}")
+    
+    # Add actionable recommendations from insights
     for insight in insights[:3]:
-        if insight.actionable and insight.suggestedAction and insight.suggestedAction not in recs:
-            recs.append(f"💡 {insight.suggestedAction}")
+        if insight.actionable and insight.suggestedAction:
+            rec = await generate_unique_recommendation(
+                f"Convert this insight to actionable advice: {insight.suggestedAction}",
+                financial_snapshot
+            )
+            recs.append(f"💡 {rec}")
     
     if analysis.get('spending_trend') == 'increasing':
-        recs.append("📉 Your expenses are rising. Review subscriptions, dining out, and impulse purchases")
+        rec = await generate_unique_recommendation(
+            "Spending is increasing. Generate urgent advice to control expenses.",
+            financial_snapshot
+        )
+        recs.append(f"📉 {rec}")
     
     return recs[:6]
 
@@ -645,7 +658,7 @@ def generate_recommendations(insights: List[Insight], score: int, analysis: Dict
 def root():
     return {
         "message": "MyFin AI Recommender Service 🤖",
-        "version": "2.0.0-fixed",
+        "version": "2.0.0-llm-enhanced",
         "status": "running"
     }
 
@@ -661,49 +674,43 @@ async def health_check():
 
 @app.post("/api/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(data: UserFinancialData):
-    """Generate personalized financial recommendations"""
+    """Generate personalized financial recommendations with LLM enhancement"""
     try:
         print(f"\n[API] Processing recommendations for user {data.userId}")
         
-        # Step 1: Fast analysis (no LLM)
+        # If savings goal wasn't provided in the request, it should have been sent from frontend
+        # The frontend should pass the real savings goal from the database
+        # Log what we received for debugging
+        print(f"[API] Received savings goal from request: {data.savingsGoal}")
+        
+        # Step 1: Fast analysis
         analysis = analyze_spending_patterns(data.transactions)
-        insights = generate_insights(data, analysis)
         score = calculate_financial_health_score(data, analysis)
         predictions = generate_predictions(data, analysis)
-        recommendations = generate_recommendations(insights, score, analysis)
         
         total_balance = sum(acc.balance for acc in data.accounts)
+        
+        # Use real user savings goal, or calculate emergency fund target
+        savings_goal = data.savingsGoal if data.savingsGoal and data.savingsGoal > 0 else (analysis.get('avg_monthly_expense', 0) * 3)
+        goal_progress = min(total_balance / savings_goal, 1) if savings_goal > 0 else 0
+        
         summary = {
             'totalBalance': total_balance,
             'monthlyExpenses': analysis.get('avg_monthly_expense', 0),
             'savingsRate': ((analysis.get('total_income', 0) - analysis.get('total_expenses', 0)) / analysis.get('total_income', 1) * 100) if analysis.get('total_income', 0) > 0 else 0,
             'topCategory': analysis.get('top_category'),
-            'spendingTrend': analysis.get('spending_trend')
+            'spendingTrend': analysis.get('spending_trend'),
+            'savingsGoal': savings_goal,
+            'goalProgress': goal_progress
         }
         
-        # Step 2: Try to enhance with LLM (non-blocking)
-        llm_enhanced = False
-        try:
-            if await check_ollama_available():
-                print("[LLM] Ollama available, enhancing insights...")
-                
-                enhanced_insights, enhanced_recs = await asyncio.gather(
-                    enhance_insights_parallel(insights, summary, max_enhance=2),
-                    enhance_recommendations_parallel(recommendations, summary, max_enhance=2),
-                    return_exceptions=True
-                )
-                
-                if isinstance(enhanced_insights, list):
-                    insights = enhanced_insights
-                    llm_enhanced = True
-                
-                if isinstance(enhanced_recs, list):
-                    recommendations = enhanced_recs
-                    llm_enhanced = True
-                
-                print(f"[LLM] Enhancement complete. LLM Enhanced: {llm_enhanced}")
-        except Exception as e:
-            print(f"[LLM] Enhancement failed (non-critical): {e}")
+        # Step 2: Generate LLM-enhanced insights and recommendations in parallel
+        insights_task = generate_insights(data, analysis)
+        
+        insights = await insights_task
+        recommendations = await generate_recommendations(insights, score, analysis)
+        
+        print(f"[API] Generated {len(insights)} insights and {len(recommendations)} recommendations")
         
         return RecommendationResponse(
             insights=insights,
