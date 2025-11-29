@@ -3,20 +3,30 @@ import type { DashboardData, Account, Txn, User } from "../types";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
-// JWT Token Management
 const TOKEN_KEY = "myfin.jwt";
+const SESSION_TOKEN_KEY = "myfin.session.jwt";
 
 export const tokenManager = {
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    // Check sessionStorage first (temporary), then localStorage (persistent)
+    return sessionStorage.getItem(SESSION_TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
   },
   
-  setToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+  setToken(token: string, remember: boolean = true): void {
+    if (remember) {
+      // Persistent: survives browser close
+      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.removeItem(SESSION_TOKEN_KEY); // Clear session token
+    } else {
+      // Temporary: cleared when browser closes
+      sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+      localStorage.removeItem(TOKEN_KEY); // Clear persistent token
+    }
   },
   
   removeToken(): void {
     localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
   },
   
   getAuthHeader(): HeadersInit {
@@ -117,21 +127,26 @@ const handleAuthResponse = async (response: Response): Promise<AuthApiResponse> 
 export const api = {
   // ========== AUTH METHODS WITH JWT ==========
   
-  async login(usernameOrEmail: string, password: string): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameOrEmail, password }),
-    });
-    
-    const data = await handleAuthResponse(response);
-    
-    return {
-      id: data.id,
-      email: data.username,
-      name: data.username,
-    };
-  },
+  async login(usernameOrEmail: string, password: string, remember: boolean = true): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: usernameOrEmail, password }),
+  });
+  
+  const data = await handleAuthResponse(response);
+  
+  // Store JWT with remember preference
+  if (data.token) {
+    tokenManager.setToken(data.token, remember);
+  }
+  
+  return {
+    id: data.id,
+    email: data.username,
+    name: data.username,
+  };
+},
 
   async register(username: string, password: string, email: string, firstName: string, lastName: string): Promise<User> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {

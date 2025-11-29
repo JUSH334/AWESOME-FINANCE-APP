@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./stores/auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
+import LandingPage from "./pages/Landing";
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import ResetPasswordPage from "./pages/ResetPassword";
@@ -17,6 +18,20 @@ import ProfilePage from "./pages/Profile";
 import AIInsightsPage from "./pages/AIInsights";
 import AddDataPage from "./pages/AddData";
 import NotFound from "./pages/NotFound";
+
+// Smart Landing: only redirects if user is authenticated
+function SmartLanding() {
+  const isAuth = useAuth(s => s.isAuth);
+  // Only redirect to dashboard if authenticated (has valid token)
+  // If not authenticated, show landing page (including after logout)
+  return isAuth ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+}
+
+// Auth pages: redirect to dashboard if already logged in
+function AuthRoute({ children }: { children: React.ReactElement }) {
+  const isAuth = useAuth(s => s.isAuth);
+  return isAuth ? <Navigate to="/dashboard" replace /> : children;
+}
 
 export default function App() {
   const hydrate = useAuth(s => s.hydrate);
@@ -40,16 +55,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/reset-password-confirm" element={<ResetPasswordConfirmPage />} />
+        {/* Landing: shows landing page by default, or dashboard if authenticated */}
+        <Route path="/" element={<SmartLanding />} />
+        
+        {/* Auth Routes: redirect to dashboard if already authenticated */}
+        <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
+        <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
+        <Route path="/reset-password" element={<AuthRoute><ResetPasswordPage /></AuthRoute>} />
+        <Route path="/reset-password-confirm" element={<AuthRoute><ResetPasswordConfirmPage /></AuthRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/change-username" element={<ChangeUsernamePage />} />
+        <Route path="/change-username" element={<AuthRoute><ChangeUsernamePage /></AuthRoute>} />
 
+        {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
-            <Route index element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
@@ -59,6 +78,7 @@ export default function App() {
           </Route>
         </Route>
 
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -29,17 +29,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
 
-  const onSubmit = async (v: Form) => {
-    try {
-      setApiError("");
-      const u = await api.login(v.username, v.password);
-      login(u, v.remember);
-      navigate("/dashboard");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed";
-      setApiError(message);
-    }
-  };
+  // frontend/src/pages/Login.tsx
+const onSubmit = async (v: Form) => {
+  try {
+    setApiError("");
+    const u = await api.login(v.username, v.password, v.remember); // Pass remember flag
+    login(u, v.remember);
+    navigate("/dashboard");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Login failed";
+    setApiError(message);
+  }
+};
 
   return (
     <div className="relative min-h-screen overflow-hidden">
