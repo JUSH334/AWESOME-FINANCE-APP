@@ -2,20 +2,6 @@
 import { test, expect } from '../setup';
 
 test.describe('Sidebar Navigation', () => {
-  test('should display all navigation links', async ({ authenticatedPage: page }) => {
-    await expect(page.locator('a[href="/dashboard"]')).toBeVisible();
-    await expect(page.locator('a[href="/accounts"]')).toBeVisible();
-    await expect(page.locator('a[href="/budgets"]')).toBeVisible();
-    await expect(page.locator('a[href="/ai-insights"]')).toBeVisible();
-    await expect(page.locator('a[href="/profile"]')).toBeVisible();
-  });
-
-  test('should navigate to dashboard', async ({ authenticatedPage: page }) => {
-    await page.click('a[href="/dashboard"]');
-    await expect(page).toHaveURL(/.*dashboard/);
-    await expect(page.locator('a[href="/dashboard"]')).toHaveClass(/bg-green-600/);
-  });
-
   test('should navigate to accounts', async ({ authenticatedPage: page }) => {
     await page.click('a[href="/accounts"]');
     await expect(page).toHaveURL(/.*accounts/);

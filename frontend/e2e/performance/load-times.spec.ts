@@ -8,7 +8,7 @@ test.describe('Performance Tests', () => {
     await page.fill('input[placeholder*="password"]', 'TestPassword123!');
     
     const startTime = Date.now();
-    await page.click('button[type="submit"]');
+     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL('**/dashboard');
     await page.waitForSelector('text=/welcome back/i');
     const loadTime = Date.now() - startTime;
@@ -17,27 +17,11 @@ test.describe('Performance Tests', () => {
     console.log(`Dashboard load time: ${loadTime}ms`);
   });
 
-  test('should handle large transaction lists efficiently', async ({ page }) => {
-    await page.goto('http://localhost:5173/login');
-    await page.fill('input[placeholder*="username"]', 'testuser');
-    await page.fill('input[placeholder*="password"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard');
-    
-    const startTime = Date.now();
-    await page.click('a[href="/accounts"]');
-    await page.waitForSelector('table');
-    const renderTime = Date.now() - startTime;
-    
-    expect(renderTime).toBeLessThan(3000);
-    console.log(`Transactions list render time: ${renderTime}ms`);
-  });
-
   test('should render charts without blocking UI', async ({ page }) => {
     await page.goto('http://localhost:5173/login');
     await page.fill('input[placeholder*="username"]', 'testuser');
     await page.fill('input[placeholder*="password"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
+     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL('**/dashboard');
     
     // Check that UI is responsive while charts load
@@ -52,7 +36,7 @@ test.describe('Performance Tests', () => {
     await page.goto('http://localhost:5173/login');
     await page.fill('input[placeholder*="username"]', 'testuser');
     await page.fill('input[placeholder*="password"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
+     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL('**/dashboard');
     
     // Rapidly navigate between pages

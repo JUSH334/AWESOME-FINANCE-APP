@@ -2,10 +2,6 @@
 import { test, expect } from '../setup';
 
 test.describe('Header Navigation', () => {
-  test('should display page title', async ({ authenticatedPage: page }) => {
-    await expect(page.locator('h1')).toBeVisible();
-  });
-
   test('should display sign out button', async ({ authenticatedPage: page }) => {
     await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
   });

@@ -1,45 +1,43 @@
-// tests/e2e/setup.ts
+// frontend/e2e/setup.ts
 import { test as base, expect } from '@playwright/test';
 
+// Define the fixture type
+type TestFixtures = {
+  authenticatedPage: any;
+};
+
 // Extend base test with custom fixtures
-export const test = base.extend({
-  // Authenticated context
-  authenticatedPage: async ({ page }, use) => {
-    // Register and login
-    await page.goto('http://localhost:5173/register');
-    const timestamp = Date.now();
-    const testUser = {
-      username: `testuser${timestamp}`,
-      email: `test${timestamp}@example.com`,
-      firstName: 'Test',
-      lastName: 'User',
+export const test = base.extend<TestFixtures>({
+  // Authenticated context fixture
+  authenticatedPage: async ({ page }, use:any) => {
+    // Navigate to login page
+    await page.goto('http://localhost:5173/login');
+    
+    // Use a consistent test user (assuming this user exists)
+    // You may need to create this user first or modify credentials
+    const testCredentials = {
+      username: 'testuser',
       password: 'TestPassword123!'
     };
     
-    await page.fill('input[placeholder*="username"]', testUser.username);
-    await page.fill('input[type="email"]', testUser.email);
-    await page.fill('input[placeholder*="first name"]', testUser.firstName);
-    await page.fill('input[placeholder*="last name"]', testUser.lastName);
-    await page.fill('input[placeholder*="password"]:not([placeholder*="Confirm"])', testUser.password);
-    await page.fill('input[placeholder*="Confirm"]', testUser.password);
-    await page.click('button[type="submit"]');
+    // Fill in login form
+    await page.fill('input[placeholder*="username"]', testCredentials.username);
+    await page.fill('input[placeholder*="password"]', testCredentials.password);
     
-    // Wait for success page and extract verification token from email mock
-    await page.waitForURL('**/register', { timeout: 5000 });
+    // Submit login
+    const submit = page.getByRole('button', { name: 'Sign in' });
+    await submit.click();
     
-    // Mock email verification by directly calling the API
-    const response = await page.request.post('http://localhost:8080/api/auth/verify-email', {
-      params: { token: 'mock-token' }
-    });
+    // Wait for successful login and navigation to dashboard
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
     
-    // Login
-    await page.goto('http://localhost:5173/login');
-    await page.fill('input[placeholder*="username"]', testUser.username);
-    await page.fill('input[placeholder*="password"]', testUser.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard');
+    // Verify we're logged in by checking for dashboard elements
+    await page.waitForSelector('text=/welcome back/i', { timeout: 5000 });
     
+    // Pass the authenticated page to the test
     await use(page);
+    
+    // Cleanup is automatic - page is disposed after test
   }
 });
 

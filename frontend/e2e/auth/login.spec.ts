@@ -12,15 +12,15 @@ test.describe('User Login', () => {
     await expect(page.getByPlaceholder(/password/i)).toBeVisible();
   });
 
-  test('should show validation errors', async ({ page }) => {
-    await page.click('button[type="submit"]');
-    await expect(page.getByText(/username.*required/i)).toBeVisible();
-  });
+test('should show validation errors', async ({ page }) => {
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await expect(page.getByText(/username or email is required/i)).toBeVisible({ timeout: 5000 });
+});
 
   test('should show error for invalid credentials', async ({ page }) => {
     await page.fill('input[placeholder*="username"]', 'wronguser');
     await page.fill('input[placeholder*="password"]', 'wrongpass');
-    await page.click('button[type="submit"]');
+     await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page.getByText(/invalid.*credentials/i)).toBeVisible({ timeout: 5000 });
   });
 
@@ -28,7 +28,7 @@ test.describe('User Login', () => {
     // Assumes test user exists from setup
     await page.fill('input[placeholder*="username"]', 'testuser');
     await page.fill('input[placeholder*="password"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /sign in/i }).click();
     await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
   });
 
@@ -40,7 +40,7 @@ test.describe('User Login', () => {
     const rememberCheckbox = page.locator('input[type="checkbox"]');
     await rememberCheckbox.uncheck();
     
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL(/.*dashboard/);
     
     // Check sessionStorage instead of localStorage
@@ -57,10 +57,10 @@ test.describe('User Login', () => {
     await expect(passwordInput).toHaveAttribute('type', 'text');
   });
 
-  test('should navigate to register page', async ({ page }) => {
-    await page.click('text=/create.*account/i');
-    await expect(page).toHaveURL(/.*register/);
-  });
+test('should navigate to register page', async ({ page }) => {
+  await page.getByRole('link', { name: /create one/i }).click();
+  await expect(page).toHaveURL(/.*register/, { timeout: 5000 });
+});
 
   test('should navigate to forgot password page', async ({ page }) => {
     await page.click('text=/forgot password/i');

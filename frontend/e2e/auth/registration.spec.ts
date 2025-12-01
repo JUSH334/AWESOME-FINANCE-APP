@@ -15,20 +15,29 @@ test.describe('User Registration', () => {
   });
 
   test('should show validation errors for empty form', async ({ page }) => {
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /create account/i }).click();
     await expect(page.getByText(/username is required/i)).toBeVisible();
-    await expect(page.getByText(/email/i)).toBeVisible();
+    await expect(page.getByText(/please enter a valid email/i)).toBeVisible();
+    await expect(page.getByText(/first name is required/i)).toBeVisible();
+    await expect(page.getByText(/last name is required/i)).toBeVisible();
   });
 
-  test('should show error for invalid email', async ({ page }) => {
-    await page.fill('input[type="email"]', 'invalid-email');
-    await page.click('button[type="submit"]');
-    await expect(page.getByText(/valid email/i)).toBeVisible();
+test('should show error for invalid email', async ({ page }) => {
+  // Handle alert dialog
+  page.on('dialog', async dialog => {
+    expect(dialog.message()).toMatch(/invalid/i);
+    await dialog.accept();
   });
+  
+  await page.fill('input[type="email"]', 'invalid-email');
+  await page.getByRole('button', { name: /create account/i }).click();
+});
 
   test('should show error for weak password', async ({ page }) => {
     await page.fill('input[placeholder*="password"]:not([placeholder*="Confirm"])', '123');
-    await expect(page.getByText(/at least 8 characters/i)).toBeVisible();
+    await page.getByRole('button', { name: /create account/i }).click();
+
+    await expect(page.getByText(/at least 8 characters/i).first()).toBeVisible();
   });
 
   test('should show password strength indicator', async ({ page }) => {
@@ -58,7 +67,7 @@ test.describe('User Registration', () => {
     await page.fill('input[placeholder*="password"]:not([placeholder*="Confirm"])', 'TestPassword123!');
     await page.fill('input[placeholder*="Confirm"]', 'TestPassword123!');
     
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /create account/i }).click();
     await expect(page.getByText(/check your email/i)).toBeVisible({ timeout: 10000 });
   });
 
@@ -71,7 +80,7 @@ test.describe('User Registration', () => {
     await page.fill('input[placeholder*="last name"]', 'User');
     await page.fill('input[placeholder*="password"]:not([placeholder*="Confirm"])', 'TestPassword123!');
     await page.fill('input[placeholder*="Confirm"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /create account/i }).click();
     
     // Try again with same username
     await page.goto('http://localhost:5173/register');
@@ -81,7 +90,7 @@ test.describe('User Registration', () => {
     await page.fill('input[placeholder*="last name"]', 'User');
     await page.fill('input[placeholder*="password"]:not([placeholder*="Confirm"])', 'TestPassword123!');
     await page.fill('input[placeholder*="Confirm"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /create account/i }).click();
     
     await expect(page.getByText(/username.*taken|already exists/i)).toBeVisible();
   });

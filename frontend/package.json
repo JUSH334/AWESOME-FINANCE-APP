@@ -7,7 +7,22 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:setup": "node e2e/scripts/setup-test-user.js",
+    "test:e2e:auth": "playwright test e2e/auth",
+    "test:e2e:accounts": "playwright test e2e/accounts",
+    "test:e2e:budgets": "playwright test e2e/budgets",
+    "test:e2e:dashboard": "playwright test e2e/dashboard",
+    "test:e2e:ai": "playwright test e2e/ai",
+    "test:e2e:integration": "playwright test e2e/integration"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -22,6 +37,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@eslint/js": "^9.36.0",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/vite": "^4.1.14",
