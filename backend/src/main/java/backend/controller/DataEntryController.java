@@ -195,16 +195,70 @@ public class DataEntryController {
     }
 
     @DeleteMapping("/transactions/{id}")
-    public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Authentication auth) {
-        try {
-            Long userId = getUserIdFromAuth(auth);
-            transactionService.deleteTransaction(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Transaction deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Authentication auth) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        
+        // Get the transaction first to revert balance
+        Transaction transaction = transactionService.getTransactionById(id, userId);
+        
+        // Revert balance change if transaction has an account
+        if (transaction.getAccountId() != null) {
+            Account account = accountService.getAccountById(transaction.getAccountId(), userId);
+            BigDecimal currentBalance = account.getBalance();
+            BigDecimal newBalance;
+            
+            // Reverse the transaction effect
+            if ("in".equals(transaction.getType())) {
+                // Was income, subtract it
+                newBalance = currentBalance.subtract(transaction.getAmount());
+            } else {
+                // Was expense, add it back
+                newBalance = currentBalance.add(transaction.getAmount());
+            }
+            
+            accountService.updateBalance(transaction.getAccountId(), userId, newBalance);
         }
+        
+        transactionService.deleteTransaction(id, userId);
+        return ResponseEntity.ok(Map.of("message", "Transaction deleted successfully"));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
     }
+}
+
+@DeleteMapping("/transactions/bulk")
+public ResponseEntity<?> bulkDeleteTransactions(
+    @RequestBody Map<String, List<Integer>> request,  // Changed from List<Long> to List<Integer>
+    Authentication auth
+) {
+    try {
+        Long userId = getUserIdFromAuth(auth);
+        List<Integer> transactionIdsInt = request.get("transactionIds");
+        
+        if (transactionIdsInt == null || transactionIdsInt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "No transaction IDs provided"));
+        }
+        
+        // Convert Integer list to Long list
+        List<Long> transactionIds = transactionIdsInt.stream()
+            .map(Integer::longValue)
+            .collect(java.util.stream.Collectors.toList());
+        
+        transactionService.deleteTransactions(transactionIds, userId);
+        
+        return ResponseEntity.ok(Map.of(
+            "message", "Transactions deleted successfully",
+            "count", transactionIds.size()
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Map.of("error", e.getMessage()));
+    }
+}
+
 
     // ==================== PDF UPLOAD ENDPOINT ====================
 

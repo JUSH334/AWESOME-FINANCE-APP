@@ -262,22 +262,36 @@ const endDate = now;
     });
   };
 
+    const parseLocalDate = (dateStr: string): Date => {
+    // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create date in local timezone
+    return new Date(year, month - 1, day);
+  };
+
   // Helper: Aggregate data by period
   const aggregateByPeriod = (txns: any[], aggregation: AggregationMode) => {
-    const grouped: { [key: string]: { total: number; count: number; date: Date; byCategory: { [cat: string]: number } } } = {};
+    const grouped: { [key: string]: { total: number; count: number; date: Date; byCategory: { [cat: string]: number }; income: number; expenses: number } } = {};
     
     txns.forEach(t => {
-      const date = new Date(t.transactionDate || t.date);
+      const date = parseLocalDate(t.transactionDate || t.date);
       let key = '';
       
       switch (aggregation) {
         case 'daily':
-          key = date.toISOString().split('T')[0];
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          key = `${year}-${month}-${day}`;
           break;
         case 'weekly':
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
-          key = weekStart.toISOString().split('T')[0];
+          const wYear = weekStart.getFullYear();
+          const wMonth = String(weekStart.getMonth() + 1).padStart(2, '0');
+          const wDay = String(weekStart.getDate()).padStart(2, '0');
+          key = `${wYear}-${wMonth}-${wDay}`;
           break;
         case 'monthly':
           key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -295,7 +309,14 @@ const endDate = now;
       const category = t.category || 'Other';
       
       if (!grouped[key]) {
-        grouped[key] = { total: 0, count: 0, date, byCategory: {} };
+        grouped[key] = { total: 0, count: 0, date, byCategory: {}, income: 0, expenses: 0 };
+      }
+      
+      // Track income and expenses separately
+      if (t.type === 'in') {
+        grouped[key].income += amount;
+      } else {
+        grouped[key].expenses += amount;
       }
       
       grouped[key].total += amount;
@@ -381,50 +402,16 @@ const endDate = now;
     break;
 }
         
-        // Calculate amount based on income/expense filter
-        let amount = data.total;
+        let amount = 0;
         
-        // For 'all' mode, we need to calculate net (income - expenses)
+        // For 'all' mode, calculate net (income - expenses)
         if (spendingConfig.showIncomeExpense === 'all') {
-          // Recalculate from original transactions for this period
-          const periodTxns = filteredTxns.filter(t => {
-            const txDate = new Date(t.transactionDate || t.date);
-            // Check if transaction belongs to this period
-            let periodKey = '';
-            switch (spendingConfig.aggregation) {
-              case 'daily':
-                periodKey = txDate.toISOString().split('T')[0];
-                break;
-              case 'weekly':
-                const weekStart = new Date(txDate);
-                weekStart.setDate(txDate.getDate() - txDate.getDay());
-                periodKey = weekStart.toISOString().split('T')[0];
-                break;
-              case 'monthly':
-                periodKey = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}`;
-                break;
-              case 'quarterly':
-                const quarter = Math.floor(txDate.getMonth() / 3) + 1;
-                periodKey = `${txDate.getFullYear()}-Q${quarter}`;
-                break;
-              case 'yearly':
-                periodKey = `${txDate.getFullYear()}`;
-                break;
-            }
-            return periodKey === key;
-          });
-          
-          const income = periodTxns
-            .filter(t => t.type === 'in')
-            .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount), 0);
-          
-          const expenses = periodTxns
-            .filter(t => t.type === 'out')
-            .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount), 0);
-          
-          amount = income - expenses; // Net amount
+          amount = data.income - data.expenses;
+        } else if (spendingConfig.showIncomeExpense === 'income') {
+          amount = data.income;
+        } else {
+          amount = data.expenses;
         }
-        
         if (spendingConfig.dataMode === 'average') {
           amount = data.count > 0 ? amount / data.count : 0;
         } else if (spendingConfig.dataMode === 'percentageOfTotal') {
@@ -1645,6 +1632,7 @@ const renderCategoryChart = () => {
           </div>
         </div>
       </div>
+      
       {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {/* Spending Over Time */}
@@ -1803,20 +1791,6 @@ const renderCategoryChart = () => {
           />
         </div>
       </div>
-
-      {/* Quick Stats */}
-      {transactions.length === 0 && accounts.length === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
-          <p className="text-blue-900 font-medium mb-2">Welcome to Your Dashboard!</p>
-          <p className="text-blue-800 mb-4">Get started by adding your first account or transaction</p>
-          
-            href="/add-data"
-            className="inline-block px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors"
-          <a>
-            Add Your First Account
-          </a>
-        </div>
-      )}
     </div>
   );
 }

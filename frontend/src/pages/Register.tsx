@@ -92,7 +92,7 @@ export default function RegisterPage() {
                     <path d="M32 4 A 28 28 0 0 0 32 60" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
                   </svg>
                 </div>
-                <span className="text-xl md:text-2xl font-semibold text-slate-900">MyFin</span>
+                <span className="text-xl md:text-2xl font-semibold text-slate-900">Awesome Finance</span>
               </Link>
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function RegisterPage() {
                   <path d="M32 4 A 28 28 0 0 0 32 60" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
                 </svg>
               </div>
-              <span className="text-xl md:text-2xl font-semibold text-slate-900">MyFin</span>
+              <span className="text-xl md:text-2xl font-semibold text-slate-900">Awesome Finance</span>
             </Link>
             <span className="text-slate-500">• Create account</span>
           </div>
@@ -190,7 +190,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-xl p-8">
             <h1 className="text-2xl font-semibold mb-1">Create account</h1>
-            <p className="text-sm text-slate-500 mb-6">Join MyFin and take control of your finances</p>
+            <p className="text-sm text-slate-500 mb-6">Join Awesome Finance and take control of your finances</p>
 
             {apiError && (
               <div className="flex items-start gap-3 p-4 rounded-xl border bg-rose-50 border-rose-200 text-rose-800 mb-4">

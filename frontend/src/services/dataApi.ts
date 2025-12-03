@@ -180,6 +180,24 @@ export const dataApi = {
     return response.json();
   },
 
+  async bulkDeleteTransactions(transactionIds: number[]) {
+  const response = await fetch(`${API_BASE_URL}/data/transactions/bulk`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      ...tokenManager.getAuthHeader()
+    },
+    body: JSON.stringify({ transactionIds })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to delete transactions');
+  }
+
+  return response.json();
+},
+
   // ==================== PDF UPLOAD ====================
 
   async uploadStatement(file: File, accountId: number | null) {

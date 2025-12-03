@@ -78,7 +78,7 @@ export default function ChangeUsernamePage() {
                     <path d="M32 4 A 28 28 0 0 0 32 60" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
                   </svg>
                 </div>
-                <span className="text-xl md:text-2xl font-semibold text-slate-900">MyFin</span>
+                <span className="text-xl md:text-2xl font-semibold text-slate-900">Awesome Finance</span>
               </Link>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function ChangeUsernamePage() {
                   <path d="M32 4 A 28 28 0 0 0 32 60" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" fill="none" />
                 </svg>
               </div>
-              <span className="text-xl md:text-2xl font-semibold text-slate-900">MyFin</span>
+              <span className="text-xl md:text-2xl font-semibold text-slate-900">Awesome Finance</span>
             </Link>
             <span className="text-slate-500">• Change username</span>
           </div>

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AccountService {
@@ -35,10 +36,11 @@ public class AccountService {
             throw new IllegalArgumentException("Invalid account type. Must be checking, savings, or credit");
         }
 
-        // Check if account with same name already exists
-        if (accountRepository.existsByUserIdAndName(userId, name)) {
-            throw new IllegalArgumentException("Account with this name already exists");
-        }
+// Check if ACTIVE account with same name already exists
+    Optional<Account> existingAccount = accountRepository.findByUserIdAndNameAndIsActive(userId, name, true);
+    if (existingAccount.isPresent()) {
+        throw new IllegalArgumentException("Account with this name already exists");
+    }
 
         Account account = new Account();
         account.setUserId(userId);

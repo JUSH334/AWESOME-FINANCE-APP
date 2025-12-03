@@ -95,7 +95,7 @@ const onSubmit = async (v: Form) => {
             className="rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-xl p-8"
           >
             <h1 className="text-2xl font-semibold mb-1">Sign in</h1>
-            <p className="text-sm text-slate-500 mb-6">Welcome back to MyFin</p>
+            <p className="text-sm text-slate-500 mb-6">Welcome back to Awesome Finance</p>
 
             {apiError && (
               <div className="flex items-start gap-3 p-4 rounded-xl border bg-rose-50 border-rose-200 text-rose-800 mb-4">

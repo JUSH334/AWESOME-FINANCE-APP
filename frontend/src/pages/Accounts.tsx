@@ -223,44 +223,43 @@ export default function AccountsPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedTransactions.size === 0) {
-      setMessage({ type: 'error', text: 'No transactions selected' });
-      return;
-    }
+const handleBulkDelete = async () => {
+  if (selectedTransactions.size === 0) {
+    setMessage({ type: 'error', text: 'No transactions selected' });
+    return;
+  }
 
-    if (!confirm(`Are you sure you want to delete ${selectedTransactions.size} transaction(s)? This action cannot be undone.`)) {
-      return;
-    }
+  if (!confirm(`Are you sure you want to delete ${selectedTransactions.size} transaction(s)? Account balances will be automatically adjusted. This action cannot be undone.`)) {
+    return;
+  }
 
-    setSaving(true);
-    setMessage(null);
+  setSaving(true);
+  setMessage(null);
 
-    try {
-      // Delete all selected transactions
-      await Promise.all(
-        Array.from(selectedTransactions).map(id =>
-          dataApi.deleteTransaction(Number(id))
-        )
-      );
+  try {
+    // Convert Set to Array of numbers
+    const transactionIds = Array.from(selectedTransactions).map(id => Number(id));
+    
+    // Use bulk delete API
+    await dataApi.bulkDeleteTransactions(transactionIds);
 
-      setMessage({ 
-        type: 'success', 
-        text: `Successfully deleted ${selectedTransactions.size} transaction(s)!` 
-      });
-      
-      setSelectedTransactions(new Set());
-      await loadData();
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to delete transactions'
-      });
-    } finally {
-      setSaving(false);
-      setTimeout(() => setMessage(null), 5000);
-    }
-  };
+    setMessage({ 
+      type: 'success', 
+      text: `Successfully deleted ${selectedTransactions.size} transaction(s) and reverted balance changes!` 
+    });
+    
+    setSelectedTransactions(new Set());
+    await loadData();
+  } catch (error) {
+    setMessage({
+      type: 'error',
+      text: error instanceof Error ? error.message : 'Failed to delete transactions'
+    });
+  } finally {
+    setSaving(false);
+    setTimeout(() => setMessage(null), 5000);
+  }
+};
 
   const handleDeleteAccount = async (id: string | number) => {
     if (!confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
@@ -286,27 +285,27 @@ export default function AccountsPage() {
   };
 
   const handleDeleteTransaction = async (id: string | number) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) {
-      return;
-    }
+  if (!confirm('Are you sure you want to delete this transaction? The account balance will be automatically adjusted.')) {
+    return;
+  }
 
-    setSaving(true);
-    setMessage(null);
+  setSaving(true);
+  setMessage(null);
 
-    try {
-      await dataApi.deleteTransaction(Number(id));
-      setMessage({ type: 'success', text: 'Transaction deleted successfully!' });
-      await loadData();
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to delete transaction'
-      });
-    } finally {
-      setSaving(false);
-      setTimeout(() => setMessage(null), 5000);
-    }
-  };
+  try {
+    await dataApi.deleteTransaction(Number(id));
+    setMessage({ type: 'success', text: 'Transaction deleted and balance reverted successfully!' });
+    await loadData();
+  } catch (error) {
+    setMessage({
+      type: 'error',
+      text: error instanceof Error ? error.message : 'Failed to delete transaction'
+    });
+  } finally {
+    setSaving(false);
+    setTimeout(() => setMessage(null), 5000);
+  }
+};
 
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();

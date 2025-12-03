@@ -100,6 +100,7 @@ export default function BudgetsPage() {
   const loadBudgets = async () => {
     try {
       setLoading(true);
+      
       const data = await budgetApi.getBudgets();
       setBudgets(data);
     } catch (error) {

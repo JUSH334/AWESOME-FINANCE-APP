@@ -34,7 +34,7 @@ app.add_middleware(
 
 # ============= CONFIGURATION =============
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "mistral:7b"
+OLLAMA_MODEL = "gemma:2b"
 LLM_TIMEOUT = 60.0
 MAX_TOKENS = 300  # Increased from 150 to allow longer responses
 CACHE_SIZE = 128
