@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/service/UserService.java - Add these methods
 package backend.service;
 
 import backend.entity.User;

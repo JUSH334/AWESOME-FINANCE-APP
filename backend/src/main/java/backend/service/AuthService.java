@@ -25,14 +25,14 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final JwtUtil jwtUtil; // ADD THIS
+    private final JwtUtil jwtUtil; 
 
     @Autowired
     public AuthService(UserRepository userRepository, EmailService emailService, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.emailService = emailService;
-        this.jwtUtil = jwtUtil; // ADD THIS
+        this.jwtUtil = jwtUtil; 
     }
 
     /**
@@ -105,7 +105,6 @@ public class AuthService {
 
     /**
      * Login user with credential validation (accepts username or email)
-     * NOW RETURNS JWT TOKEN
      */
     public AuthResponse login(String usernameOrEmail, String password) {
         // Validation

@@ -26,7 +26,7 @@ export interface Txn {
   id: string;
   accountId?: string;
   date: string;
-  transactionDate?: string; // Added to support both field names
+  transactionDate?: string; 
   type: string;
   amount: number;
   category: string;

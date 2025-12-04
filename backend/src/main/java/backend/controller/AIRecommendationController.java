@@ -1,5 +1,3 @@
-// Save as: backend/src/main/java/backend/controller/AIRecommendationController.java
-
 package backend.controller;
 
 import org.springframework.beans.factory.annotation.Value;

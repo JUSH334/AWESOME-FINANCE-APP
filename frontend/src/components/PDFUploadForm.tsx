@@ -1,4 +1,3 @@
-// frontend/src/components/PDFUploadForm.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Upload, Loader2, CheckCircle, AlertCircle, X, FileText, Download, Edit2, Save } from 'lucide-react';
 import { dataApi } from '../services/dataApi';

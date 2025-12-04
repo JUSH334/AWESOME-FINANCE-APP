@@ -1,5 +1,4 @@
-﻿﻿// frontend/src/pages/Accounts.tsx - Updated with bulk delete
-import { useEffect, useMemo, useState } from "react";
+﻿﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Filter, X, ArrowUpDown, Edit2, Trash2, Loader2 } from "lucide-react";
 import { dataApi } from "../services/dataApi";

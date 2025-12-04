@@ -1,4 +1,4 @@
-﻿﻿import { Search, LogOut } from "lucide-react";
+﻿﻿import { LogOut } from "lucide-react";
 import { useAuth } from "../stores/auth";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";

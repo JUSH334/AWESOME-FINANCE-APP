@@ -1,4 +1,3 @@
-// frontend/src/services/budgetApi.ts
 import { tokenManager } from './api';
 
 const API_BASE_URL = "http://localhost:8080/api";

@@ -1,5 +1,4 @@
-﻿// frontend/src/services/api.ts
-import type { DashboardData, Account, Txn, User } from "../types";
+﻿import type { DashboardData, Account, Txn, User } from "../types";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -255,7 +254,7 @@ export const api = {
     if (!token) return null;
 
     try {
-      // Decode JWT client-side (basic approach)
+      // Decode JWT client-side
       const payload = JSON.parse(atob(token.split('.')[1]));
       
       return {
@@ -336,7 +335,6 @@ export const api = {
 
   async getDashboard(): Promise<DashboardData> {
   try {
-    // Import dataApi to avoid circular dependency
     const { dataApi } = await import('./dataApi');
     const { profileApi } = await import('./profileApi');
     
@@ -454,7 +452,6 @@ export const api = {
       
       // Transform backend format to frontend format
       return transactions.map((txn: any) => {
-        // Extract just the date part (YYYY-MM-DD) to avoid timezone issues
         let dateStr = txn.transactionDate || txn.date || '';
         if (dateStr.includes('T')) {
           dateStr = dateStr.split('T')[0];

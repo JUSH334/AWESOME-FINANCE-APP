@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/service/TransactionService.java
 package backend.service;
 
 import backend.entity.Transaction;
@@ -136,7 +135,7 @@ public class TransactionService {
 public void deleteTransaction(Long transactionId, Long userId) {
     Transaction transaction = getTransactionById(transactionId, userId);
     
-    // FIXED: Reverse the balance change before deleting
+    //Reverse the balance change before deleting
     if (transaction.getAccountId() != null) {
         // Reverse the original transaction's effect on the account balance
         // If it was income ("in"), subtract it; if expense ("out"), add it back

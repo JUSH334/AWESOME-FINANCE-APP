@@ -1,4 +1,3 @@
-// frontend/src/components/ManualEntryForm.tsx
 import { useState, useEffect } from 'react';
 import { Plus, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { dataApi } from '../services/dataApi';
@@ -36,7 +35,7 @@ export default function ManualEntryForm({ initialEntryType }: ManualEntryFormPro
   // Transaction form state
   const [transactionForm, setTransactionForm] = useState({
     accountId: '',
-    transactionDate: getTodayDateString(), // Use local date instead of UTC
+    transactionDate: getTodayDateString(), 
     amount: '',
     category: 'Other',
     type: 'out',
@@ -108,7 +107,7 @@ export default function ManualEntryForm({ initialEntryType }: ManualEntryFormPro
       setMessage({ type: 'success', text: 'Transaction added successfully!' });
       setTransactionForm({
         accountId: transactionForm.accountId,
-        transactionDate: getTodayDateString(), // Use local date instead of UTC
+        transactionDate: getTodayDateString(), 
         amount: '',
         category: 'Other',
         type: 'out',

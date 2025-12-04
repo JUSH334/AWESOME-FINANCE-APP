@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/repository/AccountRepository.java
 package backend.repository;
 
 import backend.entity.Account;

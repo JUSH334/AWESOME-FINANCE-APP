@@ -1,4 +1,3 @@
-// frontend/src/pages/AddData.tsx
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Upload, Plus, FileText } from 'lucide-react';
@@ -14,7 +13,6 @@ export default function AddDataPage() {
   // Check if we received state from navigation with specific entry type
   useEffect(() => {
     if (location.state?.activeTab) {
-      // Don't change the main tab, just pass the info to ManualEntryForm
       setActiveTab('manual');
     }
   }, [location.state]);

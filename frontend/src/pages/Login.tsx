@@ -15,7 +15,6 @@ const schema = z.object({
 
 type Form = z.infer<typeof schema>;
 
-// Replace with your app screenshot to get the "original app look"
 const APP_PREVIEW_URL = "/assets/app-preview.jpg";
 
 export default function LoginPage() {
@@ -29,7 +28,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
 
-  // frontend/src/pages/Login.tsx
 const onSubmit = async (v: Form) => {
   try {
     setApiError("");

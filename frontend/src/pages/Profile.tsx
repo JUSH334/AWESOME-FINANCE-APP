@@ -1,5 +1,4 @@
-﻿// frontend/src/pages/Profile.tsx
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useAuth } from "../stores/auth";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, Shield, Globe, LogOut, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
@@ -101,7 +100,6 @@ export default function ProfilePage() {
     });
   } finally {
     setSaving(false);
-    // Don't auto-hide this message since it's important
     if (email !== profileData?.email) {
       // Keep the message visible for email changes
     } else {

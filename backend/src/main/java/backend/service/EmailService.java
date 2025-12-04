@@ -19,7 +19,6 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    // Frontend URL for email links (not backend URL!)
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 

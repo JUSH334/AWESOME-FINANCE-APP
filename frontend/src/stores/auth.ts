@@ -1,5 +1,4 @@
-﻿// frontend/src/stores/auth.ts
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import type { User } from "../types";
 import { api } from "../services/api";
 

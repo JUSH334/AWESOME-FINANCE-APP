@@ -448,7 +448,6 @@ const endDate = now;
     return result;
   }, [transactions, spendingConfig, accounts]);
 
-  // Calculate spending by category with all new features
  // Calculate spending by category with all new features
   const categorySpendingData = useMemo(() => {
     let filteredTxns = filterTransactions(transactions, categoryConfig);
@@ -673,7 +672,7 @@ const formatTooltipValue = (value: number, mode: 'currency' | 'percentage') => {
       relevantTxns = filtered.filter(t => {
         const date = new Date(t.transactionDate || t.date);
         // Match based on aggregation period
-        return true; // Simplified - would need more logic
+        return true; 
       });
     }
     

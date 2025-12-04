@@ -1,30 +1,4 @@
-const stats = [
-    { value: '99.9%', label: 'Uptime' },
-    { value: '256-bit', label: 'Encryption' },
-    { value: '< 1s', label: 'Load Time' },
-    { value: '24/7', label: 'Support' }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Small Business Owner',
-      content: 'Awesome Finance transformed how I manage my business finances. The AI insights are incredibly accurate!',
-      avatar: 'SJ'
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Software Engineer',
-      content: 'Finally, a finance app that understands tech. The PDF parsing saved me hours of manual entry.',
-      avatar: 'MC'
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Freelance Designer',
-      content: 'The budget tracking helped me save 30% more each month. Highly recommend!',
-      avatar: 'ER'
-    }
-  ];import { useState } from 'react';
+import { useState } from 'react';
 import { ArrowRight, Brain, Lock, TrendingUp, Wallet, PieChart, Upload, CheckCircle, Menu, X, BarChart3, Shield, Zap, Globe } from 'lucide-react';
 
 export default function LandingPage() {

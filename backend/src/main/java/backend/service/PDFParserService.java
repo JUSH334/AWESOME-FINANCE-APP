@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/service/PDFParserService.java
 package backend.service;
 
 import org.apache.pdfbox.Loader;
@@ -212,7 +211,7 @@ public class PDFParserService {
             transactions.addAll(extractCapitalOneTransactions(text, year));
         }
         
-        // NEW: Generic smart parser as final fallback
+        // Generic smart parser as final fallback
         if (transactions.isEmpty()) {
             transactions.addAll(extractGenericTransactions(text, year));
         }

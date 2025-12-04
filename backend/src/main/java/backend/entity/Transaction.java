@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/entity/Transaction.java
 package backend.entity;
 
 import jakarta.persistence.*;

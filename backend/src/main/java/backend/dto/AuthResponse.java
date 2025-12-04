@@ -10,7 +10,7 @@ public class AuthResponse {
     // Default constructor
     public AuthResponse() {}
 
-    // Constructor with 4 parameters (backward compatible)
+    // Constructor with 4 parameters
     public AuthResponse(String id, String username, boolean success, String message) {
         this.id = id;
         this.username = username;

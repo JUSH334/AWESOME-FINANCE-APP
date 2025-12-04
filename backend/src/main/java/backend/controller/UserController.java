@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/controller/UserController.java
 package backend.controller;
 
 import backend.entity.User;

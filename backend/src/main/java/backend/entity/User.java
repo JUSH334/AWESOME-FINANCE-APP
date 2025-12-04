@@ -1,4 +1,3 @@
-// backend/src/main/java/backend/entity/User.java
 package backend.entity;
 
 import jakarta.persistence.*;

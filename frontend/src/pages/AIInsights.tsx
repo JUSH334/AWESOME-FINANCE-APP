@@ -53,9 +53,8 @@ export default function AIInsightsPage() {
           accountId: txn.accountId?.toString(),
           note: txn.note || ''
         })),
-        // IMPORTANT: Pass the REAL savings goal from the database
-        monthlyIncome: undefined, // Will be calculated from transactions
-        savingsGoal: userSavingsGoal || undefined // Real savings goal from database
+        monthlyIncome: undefined, 
+        savingsGoal: userSavingsGoal || undefined 
       });
 
       setData(result);
